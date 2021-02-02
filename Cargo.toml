@@ -3,6 +3,7 @@ name = "ergo-handshake"
 version = "0.1.0"
 authors = ["Sabaun Taraki <taraki.sabaun.rl@gmail.com>"]
 edition = "2018"
+description = "Ergo P2P-Handshake implemented in accordance to spec https://github.com/ergoplatform/ergo/wiki/P2P-Handshaking"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
