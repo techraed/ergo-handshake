@@ -8,3 +8,5 @@ description = "Ergo P2P-Handshake implemented in accordance to spec https://gith
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+hex = "0.4.2"
+sigma-ser = "0.2.0"
