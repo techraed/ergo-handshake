@@ -1,15 +1,16 @@
-use std::io::{Cursor, Write};
-use std::net::SocketAddr;
+use std::io::{Cursor, Read, Write};
+use std::net::{IpAddr, SocketAddr};
 use std::time::SystemTime;
 
+use sigma_ser::peekable_reader::PeekableReader;
 use sigma_ser::vlq_encode::{ReadSigmaVlqExt, WriteSigmaVlqExt};
 
-use features::{Features, Mode, LocalAddress};
-use utils::make_timestamp;
 use errors::*;
+use features::{Features, LocalAddress, Mode};
+use utils::make_timestamp;
 
-mod features;
 mod errors;
+mod features;
 mod utils;
 
 struct Handshake {
@@ -27,7 +28,7 @@ impl Handshake {
     pub(crate) fn serialize(&self) -> Vec<u8> {
         let mut writer = Cursor::new(Vec::new());
 
-        writer.put_u64(make_timestamp());
+        writer.put_u64(make_timestamp()); // hard to test
         writer.put_u8(self.agent_name.len() as u8); // type check
         writer.write(self.agent_name.as_bytes());
         writer.write(&self.version.to_bytes());
@@ -35,8 +36,18 @@ impl Handshake {
         writer.write(self.peer_name.as_bytes());
         writer.put_u8(self.is_pub_node as u8);
         if self.is_pub_node {
-            // write address
-            // can't have public node with no address
+            let pub_addr = self.pub_address.expect("internal error: pub node without pub addr");
+            match pub_addr.ip() {
+                IpAddr::V4(v4) => {
+                    writer.put_u8(8); // including port 4 bytes!
+                    writer.write(&v4.octets())
+                }
+                IpAddr::V6(v6) => {
+                    writer.put_u8(10); // including port 4 bytes!
+                    writer.write(&v6.octets())
+                }
+            };
+            writer.put_u32(pub_addr.port() as u32);
         }
         if let Some(ref features) = self.features {
             writer.put_u8(features.len() as u8); // type check
@@ -48,8 +59,38 @@ impl Handshake {
         writer.into_inner()
     }
 
-    pub(crate) fn parse(data: &[u8]) -> Result<Self, HandshakeParseError> {
-        todo!()
+    pub(crate) fn parse(data: &[u8]) -> Result<(), HandshakeParseError> {
+        // any length check?
+        let mut reader = PeekableReader::new(Cursor::new(data));
+        let _timestamp = reader.get_u64().map_err(|_| HandshakeParseError)?;
+        let agent_name = {
+            let name_len = reader.get_u8().map_err(|_| HandshakeParseError)?;
+            let mut agent_name_bytes = vec![0; name_len as usize];
+            reader.read_exact(&mut agent_name_bytes).map_err(|| HandshakeParseError)?;
+            String::from_utf8(agent_name_bytes).expect("internal error: received non utf-8 bytes")
+        };
+        let version = {
+            let major = reader.get_u8().map_err(|e| HandshakeParseError)?;
+            let minor = reader.get_u8().map_err(|e| HandshakeParseError)?;
+            let patch = reader.get_u8().map_err(|e| HandshakeParseError)?;
+            Version(major, minor, patch)
+        };
+        let peer_name = {
+            let name_len = reader.get_u8().map_err(|_| HandshakeParseError)?;
+            let mut peer_name_bytes = vec![0; name_len as usize];
+            reader.read_exact(&mut peer_name_bytes).map_err(|| HandshakeParseError)?;
+            String::from_utf8(peer_name_bytes).expect("internal error: received non utf-8 bytes")
+        };
+        let is_pub_node = { 1 == reader.get_u8().map_err(|e| HandshakeParseError)? };
+        let mut pub_address = None;
+        if is_pub_node {
+            let address_len = reader.get_u8().map_err(|e| HandshakeParseError)?;
+            let mut ip_bytes = vec![0; address_len as usize - 4];
+            reader.read_exact(&mut ip_bytes).map_err(|_| HandshakeParseError)?;
+            // create address from bytes
+        }
+        // parse Features
+        Ok(())
     }
 }
 
@@ -89,12 +130,17 @@ mod tests {
             peer_name,
             is_pub_node: false,
             pub_address: None,
-            features: None
+            features: None,
         }
     }
 
     fn create_mode(state_type: u8, is_verifying: bool, is_nipopow: bool, blocks_kept: i32) -> Mode {
-        Mode {state_type, is_verifying, is_nipopow, blocks_kept}
+        Mode {
+            state_type,
+            is_verifying,
+            is_nipopow,
+            blocks_kept,
+        }
     }
 
     fn create_local_addr(s: &str) -> LocalAddress {
@@ -112,7 +158,7 @@ mod tests {
             let features: Vec<Box<dyn SerializableFeature>> = vec![Box::new(mode), Box::new(local)];
             create_hs_featured(hs_simple, features)
         };
-        assert_eq!(&hs.serialize()[5..], &hs_bytes[5..]);
+        assert_eq!(&hs.serialize()[5..], &hs_bytes[5..]); // ts bytes
     }
 
     #[test]

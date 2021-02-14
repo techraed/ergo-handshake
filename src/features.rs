@@ -1,12 +1,12 @@
 use std::io::{Cursor, Write};
-use std::net::{SocketAddr, IpAddr};
+use std::net::{IpAddr, SocketAddr};
 
 use sigma_ser::vlq_encode::{ReadSigmaVlqExt, WriteSigmaVlqExt};
 
 pub(super) type Features = Vec<Box<dyn SerializableFeature>>;
 
 pub(super) trait SerializableFeature {
-    fn write(&self, writer: &mut Cursor<Vec<u8>>) { // too strict
+    fn write(&self, writer: &mut Cursor<Vec<u8>>) { // to strict writer type
         writer.put_u8(self.feature_id());
         let feature_bytes = self.to_bytes();
         writer.put_u16(feature_bytes.len() as u16); // need check
@@ -14,16 +14,15 @@ pub(super) trait SerializableFeature {
     }
 
     fn to_bytes(&self) -> Vec<u8>; // 65535
-    // no const for box dyn
-    fn feature_id(&self) -> u8;
 
+    fn feature_id(&self) -> u8; // no const for box dyn
 }
 
 pub(super) struct Mode {
     pub(super) state_type: u8,
     pub(super) is_verifying: bool,
     pub(super) is_nipopow: bool,
-    pub(super) blocks_kept: i32
+    pub(super) blocks_kept: i32,
 }
 
 pub(super) struct LocalAddress(pub(super) SocketAddr);
@@ -40,7 +39,9 @@ impl SerializableFeature for Mode {
     }
 
     #[inline]
-    fn feature_id(&self) -> u8 { 16 }
+    fn feature_id(&self) -> u8 {
+        16
+    }
 }
 
 impl SerializableFeature for LocalAddress {
@@ -57,5 +58,7 @@ impl SerializableFeature for LocalAddress {
     }
 
     #[inline]
-    fn feature_id(&self) -> u8 { 2 }
+    fn feature_id(&self) -> u8 {
+        2
+    }
 }
