@@ -1,5 +1,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
+pub(super) use reader::*;
+
 pub(super) fn make_timestamp() -> u64 {
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -7,16 +9,16 @@ pub(super) fn make_timestamp() -> u64 {
     now.as_millis() as u64
 }
 
-pub(crate) mod reader {
+mod reader {
     use std::io;
     use std::ops::{Deref, DerefMut};
 
     use sigma_ser::peekable_reader::PeekableReader;
     use sigma_ser::vlq_encode::{ReadSigmaVlqExt, VlqEncodingError};
 
-    use crate::models::{HSPeerAddr, ShortString, Version};
+    use crate::models::{parse_feature, PeerAddr, PeerFeature, ShortString, Version};
 
-    pub(crate) type DefaultVlqReader<T: AsRef<[u8]>> = PeekableReader<io::Cursor<T>>;
+    pub(crate) type DefaultVlqReader<T> = PeekableReader<io::Cursor<T>>;
 
     pub(crate) struct HSReader<R: ReadSigmaVlqExt>(R);
 
@@ -31,7 +33,7 @@ pub(crate) mod reader {
         }
 
         pub(crate) fn read_short_string(&mut self) -> Result<ShortString, VlqEncodingError> {
-            let buf = self.read_var_len()?;
+            let buf = self.read_next_data()?;
             ShortString::try_from(buf).map_err(|e| VlqEncodingError::Io(e.to_string()))
         }
 
@@ -41,12 +43,28 @@ pub(crate) mod reader {
             Ok(v)
         }
 
-        pub(crate) fn read_peer_addr(&mut self) -> Result<HSPeerAddr, VlqEncodingError> {
-            let buf = self.read_var_len()?;
-            HSPeerAddr::try_from(buf).map_err(|e| VlqEncodingError::Io(e.to_string()))
+        pub(crate) fn read_peer_addr(&mut self) -> Result<PeerAddr, VlqEncodingError> {
+            let buf = self.read_next_data()?;
+            PeerAddr::try_from(buf).map_err(|e| VlqEncodingError::Io(e.to_string()))
         }
 
-        fn read_var_len(&mut self) -> Result<Vec<u8>, VlqEncodingError> {
+        pub(crate) fn read_features(&mut self) -> Result<Option<Vec<PeerFeature>>, VlqEncodingError> {
+            let features_num = self.get_u8().ok();
+            if let Some(mut num) = features_num {
+                let mut ret = Vec::with_capacity(num as usize);
+                while num != 0 {
+                    let feature_id = self.get_u8()?;
+                    let feature_data = self.read_next_data()?;
+                    let feature_res = parse_feature(feature_id, feature_data)?;
+                    ret.push(feature_res);
+                    num -= 1;
+                }
+                return Ok(Some(ret));
+            }
+            return Ok(None);
+        }
+
+        fn read_next_data(&mut self) -> Result<Vec<u8>, VlqEncodingError> {
             let len = self.get_u8()?;
             let mut buf = vec![0; len as usize];
             self.read_exact(&mut buf).map_err(VlqEncodingError::from)?;
@@ -69,6 +87,6 @@ pub(crate) mod reader {
     }
 }
 
-mod righter {
+mod writer {
     // todo
 }

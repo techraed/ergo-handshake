@@ -2,21 +2,18 @@ use std::string::FromUtf8Error;
 
 use thiserror::Error;
 
-use crate::models::{HSPeerAddr, ShortString};
-
-pub(super) struct HandshakeParseError;
-pub(super) struct HandshakeSerializeError;
+use crate::models::{PeerAddr, ShortString};
 
 #[derive(Error, Debug)]
-pub(super) enum ModelCreationError {
+pub enum ModelError {
     #[error("Can't create ShortString from buffer with length {0}. Should be {}", ShortString::SIZE)]
     InvalidShortStringLength(usize),
     #[error("Received invalid data: {0}")]
     InvalidUtf8Buffer(#[source] FromUtf8Error),
     #[error(
         "Can't create HSPeerAddr from buffer with length {0}. Should be {} or {}",
-        HSPeerAddr::SIZE_IPv4_SOCKET,
-        HSPeerAddr::SIZE_IPv6_SOCKET
+        PeerAddr::SIZE_IPv4_SOCKET,
+        PeerAddr::SIZE_IPv6_SOCKET
     )]
     InvalidPeerAddrData(usize),
 }
