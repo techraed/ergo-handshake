@@ -2,6 +2,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 pub(super) use reader::*;
 
+// mod time?
 pub(super) fn make_timestamp() -> u64 {
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -53,6 +54,7 @@ mod reader {
             if let Some(mut num) = features_num {
                 let mut ret = Vec::with_capacity(num as usize);
                 while num != 0 {
+                    // todo move to parse feature?
                     let feature_id = self.get_u8()?;
                     let feature_data = self.read_next_data()?;
                     let feature_res = parse_feature(feature_id, feature_data)?;

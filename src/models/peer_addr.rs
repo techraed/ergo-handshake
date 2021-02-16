@@ -31,13 +31,13 @@ impl PeerAddr {
                     let ip_octets = <[u8; Self::SIZE_IPv6]>::try_from(&data[..Self::SIZE_IPv6]).expect("internal error: slice len != 16");
                     IpAddr::V6(Ipv6Addr::from(ip_octets))
                 }
-                _ => return Err(ModelError::InvalidPeerAddrData(data.len())),
+                _ => return Err(ModelError::InvalidPeerAddrLength(data.len())),
             }
         };
         let port = {
             let port_start = data.len() - Self::SIZE_PORT;
-            let mut reader = default_vlq_reader(&data[port_start..]); // todo utils?
-            reader.get_u16().expect("internal error: port bytes slice len != 2")
+            let mut vlq_reader = default_vlq_reader(&data[port_start..]); // todo utils?
+            vlq_reader.get_u16().expect("internal error: port bytes slice len != 2")
         };
 
         Ok(Self(SocketAddr::new(ip_addr, port)))

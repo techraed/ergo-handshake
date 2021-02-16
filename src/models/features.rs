@@ -34,19 +34,19 @@ pub(crate) fn parse_feature(id: u8, data: Vec<u8>) -> Result<PeerFeature, VlqEnc
 
 // todo why not ModelError
 fn parse_mode(data: Vec<u8>) -> Result<Mode, VlqEncodingError> {
-    let mut reader = default_vlq_reader(data);
+    let mut vlq_reader = default_vlq_reader(data);
 
-    let state_type = reader.get_u8()?;
-    let is_verifying = reader.get_u8()? == 1;
+    let state_type = vlq_reader.get_u8()?;
+    let is_verifying = vlq_reader.get_u8()? == 1;
     let nipopow_suffix_len = {
-        let is_nipopow = reader.get_u8()? == 1;
+        let is_nipopow = vlq_reader.get_u8()? == 1;
         if is_nipopow {
-            Some(reader.get_u32()?)
+            Some(vlq_reader.get_u32()?)
         } else {
             None
         }
     };
-    let blocks_to_keep = reader.get_i32()?;
+    let blocks_to_keep = vlq_reader.get_i32()?;
 
     Ok(Mode {
         state_type,

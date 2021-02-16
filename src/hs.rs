@@ -13,27 +13,27 @@ pub struct Handshake {
 }
 
 impl Handshake {
+    // todo HandshakeParser/SerializerError
     pub fn parse(data: &[u8]) -> Result<Self, VlqEncodingError> {
-        let mut reader = HSReader::new(default_vlq_reader(data));
+        let mut hs_reader = HSReader::new(default_vlq_reader(data));
 
-        let _timestamp = reader.get_u64()?;
-        let agent_name = reader.read_short_string()?;
-        let version = reader.read_version()?;
-        let peer_name = reader.read_short_string()?;
+        let _timestamp = hs_reader.get_u64()?;
+        let agent_name = hs_reader.read_short_string()?;
+        let version = hs_reader.read_version()?;
+        let peer_name = hs_reader.read_short_string()?;
         let pub_address = {
-            let is_pub_node = reader.get_u8()? == 1;
+            let is_pub_node = hs_reader.get_u8()? == 1;
             if is_pub_node {
-                Some(reader.read_peer_addr()?)
+                Some(hs_reader.read_peer_addr()?)
             } else {
                 None
             }
         };
-        let features = reader
+        let features = hs_reader
             // moving out unrecognized features
-            // todo move to reader?
+            // todo move to utils::reader?
             .read_features()?
             .map(|mut f| {
-                // todo if let PeerFeature::Unrecognized = pf { false } else { true }
                 f.retain(|pf| pf != &PeerFeature::Unrecognized);
                 if f.len() > 0 {
                     Some(f)

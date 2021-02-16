@@ -15,5 +15,5 @@ pub enum ModelError {
         PeerAddr::SIZE_IPv4_SOCKET,
         PeerAddr::SIZE_IPv6_SOCKET
     )]
-    InvalidPeerAddrData(usize),
+    InvalidPeerAddrLength(usize),
 }
