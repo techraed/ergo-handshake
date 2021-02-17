@@ -4,7 +4,7 @@ pub use peer_addr::*;
 pub use short_string::*;
 pub use version::*;
 
-pub(crate) use features::parse_feature;
+pub(crate) use features::{parse_feature, serialize_feature};
 
 mod errors;
 mod features;

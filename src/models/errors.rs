@@ -1,3 +1,4 @@
+use std::io;
 use std::string::FromUtf8Error;
 
 use thiserror::Error;
@@ -16,4 +17,8 @@ pub enum ModelError {
         PeerAddr::SIZE_IPv6_SOCKET
     )]
     InvalidPeerAddrLength(usize),
+    #[error("Model can't be serialized: {0}")]
+    CannotSerializeData(#[source] io::Error),
 }
+
+// todo-minor ERRORS HIERARCHY IS WASTED!

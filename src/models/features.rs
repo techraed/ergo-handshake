@@ -1,6 +1,8 @@
-use sigma_ser::vlq_encode::{ReadSigmaVlqExt, VlqEncodingError};
+use std::io::Write;
 
-use crate::utils::default_vlq_reader;
+use sigma_ser::vlq_encode::{ReadSigmaVlqExt, VlqEncodingError, WriteSigmaVlqExt};
+
+use crate::utils::{default_vlq_reader, default_vlq_writer};
 
 use super::peer_addr::PeerAddr;
 
@@ -14,6 +16,19 @@ pub enum PeerFeature {
     Unrecognized,
 }
 
+impl PeerFeature {
+    pub const MODE_ID: u8 = 16;
+    pub const LOCAL_ADDR_ID: u8 = 2;
+
+    pub fn get_id(&self) -> u8 {
+        match self {
+            PeerFeature::Mode(_) => Self::MODE_ID,
+            PeerFeature::LocalAddr(_) => Self::LOCAL_ADDR_ID,
+            PeerFeature::Unrecognized => unreachable!(), // todo-crucial potentially possible! Should be handled properly!
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct Mode {
     pub state_type: u8,
@@ -22,17 +37,42 @@ pub struct Mode {
     pub blocks_to_keep: i32,
 }
 
+pub(crate) fn serialize_feature(feature: &PeerFeature) -> Result<Vec<u8>, VlqEncodingError> {
+    match feature {
+        PeerFeature::Mode(mode) => serialize_mode(mode),
+        PeerFeature::LocalAddr(peer_addr) => peer_addr.as_bytes().map_err(|e| VlqEncodingError::Io(e.to_string())),
+        PeerFeature::Unrecognized => unreachable!("unrecognized features used in hand shake instance"),
+    }
+}
+
+// todo-minor why not ModelError
+fn serialize_mode(mode: &Mode) -> Result<Vec<u8>, VlqEncodingError> {
+    let mut vlq_writer = default_vlq_writer(Vec::new());
+
+    vlq_writer.put_u8(mode.state_type)?;
+    vlq_writer.put_u8(mode.is_verifying as u8)?;
+    if let Some(popow_suf) = mode.nipopow_suffix_len {
+        vlq_writer.put_u8(1)?;
+        vlq_writer.put_u32(popow_suf)?;
+    } else {
+        vlq_writer.put_u8(0)?;
+    }
+    vlq_writer.put_i32(mode.blocks_to_keep)?;
+
+    Ok(vlq_writer.into_inner())
+}
+
 pub(crate) fn parse_feature(id: u8, data: Vec<u8>) -> Result<PeerFeature, VlqEncodingError> {
     match id {
-        MODE_ID => parse_mode(data).map(PeerFeature::Mode),
-        LOCAL_ADDR_ID => PeerAddr::try_from(data)
+        PeerFeature::MODE_ID => parse_mode(data).map(PeerFeature::Mode),
+        PeerFeature::LOCAL_ADDR_ID => PeerAddr::try_from(data)
             .map(PeerFeature::LocalAddr)
             .map_err(|e| VlqEncodingError::Io(e.to_string())),
         _ => Ok(PeerFeature::Unrecognized),
     }
 }
 
-// todo why not ModelError
+// todo-minor why not ModelError
 fn parse_mode(data: Vec<u8>) -> Result<Mode, VlqEncodingError> {
     let mut vlq_reader = default_vlq_reader(data);
 
@@ -55,53 +95,3 @@ fn parse_mode(data: Vec<u8>) -> Result<Mode, VlqEncodingError> {
         blocks_to_keep,
     })
 }
-
-// pub(super) trait SerializableFeature {
-//     fn write(&self, writer: &mut Cursor<Vec<u8>>) {
-//         // to strict writer type
-//         writer.put_u8(self.feature_id());
-//         let feature_bytes = self.to_bytes();
-//         writer.put_u16(feature_bytes.len() as u16); // need check
-//         writer.write(&feature_bytes);
-//     }
-//
-//     fn to_bytes(&self) -> Vec<u8>; // 65535
-//
-//     fn feature_id(&self) -> u8; // no const for box dyn
-// }
-//
-// impl SerializableFeature for Mode {
-//     fn to_bytes(&self) -> Vec<u8> {
-//         let mut writer = Cursor::new(Vec::new());
-//         writer.put_u8(self.state_type);
-//         writer.put_u8(self.is_verifying as u8);
-//         writer.put_u8(self.is_nipopow as u8);
-//         writer.put_i32(self.blocks_kept);
-//
-//         writer.into_inner()
-//     }
-//
-//     #[inline]
-//     fn feature_id(&self) -> u8 {
-//         MODE_ID
-//     }
-// }
-//
-// impl SerializableFeature for LocalAddress {
-//     fn to_bytes(&self) -> Vec<u8> {
-//         let LocalAddress(ref socket_addr) = self;
-//         let mut writer = Cursor::new(Vec::new());
-//         match socket_addr.ip() {
-//             IpAddr::V4(v4) => writer.write(&v4.octets()),
-//             IpAddr::V6(v6) => writer.write(&v6.octets()), // spec wants 6 bytes!
-//         };
-//         writer.put_u32(socket_addr.port() as u32);
-//
-//         writer.into_inner()
-//     }
-//
-//     #[inline]
-//     fn feature_id(&self) -> u8 {
-//         LOCAL_ADDR_ID
-//     }
-// }

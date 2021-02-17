@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use super::errors::ModelError;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -10,7 +12,15 @@ impl ShortString {
         if data.len() > Self::SIZE {
             return Err(ModelError::InvalidShortStringLength(data.len()));
         }
-        let s = String::from_utf8(data).map_err(ModelError::InvalidUtf8Buffer)?; // err type
+        let s = String::from_utf8(data).map_err(ModelError::InvalidUtf8Buffer)?;
         Ok(Self(s))
+    }
+}
+
+impl Deref for ShortString {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }

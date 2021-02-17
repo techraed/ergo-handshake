@@ -1,10 +1,12 @@
 use std::convert::TryFrom;
+use std::io::Write;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
-use crate::utils::default_vlq_reader;
+use sigma_ser::vlq_encode::{ReadSigmaVlqExt, WriteSigmaVlqExt};
+
+use crate::utils::{default_vlq_reader, default_vlq_writer};
 
 use super::errors::ModelError;
-use sigma_ser::vlq_encode::ReadSigmaVlqExt;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct PeerAddr(pub SocketAddr);
@@ -36,10 +38,30 @@ impl PeerAddr {
         };
         let port = {
             let port_start = data.len() - Self::SIZE_PORT;
-            let mut vlq_reader = default_vlq_reader(&data[port_start..]); // todo utils?
-            vlq_reader.get_u16().expect("internal error: port bytes slice len != 2")
+            let mut vlq_reader = default_vlq_reader(&data[port_start..]); // todo-minor move to utils?
+            vlq_reader.get_u16().expect("internal error: port bytes slice len != 2") // todo-crucial 4 bytes??
         };
 
         Ok(Self(SocketAddr::new(ip_addr, port)))
+    }
+
+    pub fn as_bytes(&self) -> Result<Vec<u8>, ModelError> {
+        let PeerAddr(inner) = self;
+        let mut vlq_writer = {
+            let buf_size = if inner.is_ipv4() { Self::SIZE_IPv4_SOCKET } else { Self::SIZE_IPv6_SOCKET };
+            default_vlq_writer(Vec::with_capacity(buf_size))
+        };
+        // todo-minor clean up copy-paste
+        match inner {
+            SocketAddr::V4(sock4) => {
+                vlq_writer.write_all(sock4.ip().octets().as_ref()).map_err(ModelError::CannotSerializeData)?;
+            }
+            SocketAddr::V6(sock6) => {
+                vlq_writer.write_all(sock6.ip().octets().as_ref()).map_err(ModelError::CannotSerializeData)?;
+            }
+        };
+        vlq_writer.put_u16(inner.port()).map_err(ModelError::CannotSerializeData)?; // todo-crucial 4 bytes??
+
+        Ok(vlq_writer.into_inner())
     }
 }
