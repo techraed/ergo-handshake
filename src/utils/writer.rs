@@ -4,7 +4,6 @@ use sigma_ser::vlq_encode::{ReadSigmaVlqExt, VlqEncodingError, WriteSigmaVlqExt}
 use std::ops::{Deref, DerefMut};
 
 use crate::models::{serialize_feature, Features, PeerAddr, PeerFeature, ShortString, Version};
-use crate::utils::default_vlq_reader;
 
 pub(crate) type DefaultWriter<T> = io::Cursor<T>;
 
@@ -19,14 +18,16 @@ impl<W: WriteSigmaVlqExt> HSSpecWriter<W> {
     // argument for the second approach is in `write_feature` and in simple test
     // #[test]
     // fn simple() {
+    //     use crate::utils::default_vlq_reader;
+    //
     //     let mut w = default_vlq_writer(Vec::new());
-    //     w.put_usize_as_u16(10);
+    //     w.put_u32(123123141);
     //     w.put_u8(10);
     //     let inner = w.into_inner();
     //     let mut r = default_vlq_reader(inner);
-    //     let a = r.get_u8().unwrap();
+    //     let a = r.get_u64().unwrap();
     //     let b = r.get_u16().unwrap();
-    //     assert_eq!(10, a);
+    //     assert_eq!(123123141, a);
     //     assert_eq!(10, b);
     // }
     pub(crate) fn new(writer: W) -> Self {
