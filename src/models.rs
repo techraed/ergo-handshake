@@ -1,5 +1,5 @@
 pub use errors::*;
-pub use features::{Mode, PeerFeature};
+pub use features::{Features, Mode, PeerFeature};
 pub use peer_addr::*;
 pub use short_string::*;
 pub use version::*;

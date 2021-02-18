@@ -4,7 +4,7 @@ use std::ops::{Deref, DerefMut};
 use sigma_ser::peekable_reader::PeekableReader;
 use sigma_ser::vlq_encode::{ReadSigmaVlqExt, VlqEncodingError};
 
-use crate::models::{parse_feature, PeerAddr, PeerFeature, ShortString, Version};
+use crate::models::{parse_feature, Features, PeerAddr, PeerFeature, ShortString, Version};
 
 pub(crate) type DefaultVlqReader<T> = PeekableReader<io::Cursor<T>>;
 
@@ -16,12 +16,26 @@ pub(crate) fn default_vlq_reader<T: AsRef<[u8]>>(data: T) -> DefaultVlqReader<T>
 }
 
 impl<R: ReadSigmaVlqExt> HSSpecReader<R> {
+    // todo-minor discuss reading lengths approaches: 1) doing it by read fns (more safe) or 2) by 1 generally used `read_next_model` fn.
+    // #[test]
+    // fn simple() {
+    //     let mut w = default_vlq_writer(Vec::new());
+    //     w.put_usize_as_u16(10);
+    //     w.put_u8(10);
+    //     let inner = w.into_inner();
+    //     let mut r = default_vlq_reader(inner);
+    //     let a = r.get_u64().unwrap();
+    //     let b = r.get_u16().unwrap();
+    //     assert_eq!(10, a);
+    //     assert_eq!(10, b);
+    // }
     pub(crate) fn new(reader: R) -> Self {
         Self(reader)
     }
 
     pub(crate) fn read_short_string(&mut self) -> Result<ShortString, VlqEncodingError> {
-        let buf = self.read_model_data()?;
+        let len = self.get_u8()?;
+        let buf = self.read_model_data(len as usize)?;
         ShortString::try_from(buf).map_err(|e| VlqEncodingError::Io(e.to_string()))
     }
 
@@ -32,30 +46,32 @@ impl<R: ReadSigmaVlqExt> HSSpecReader<R> {
     }
 
     pub(crate) fn read_peer_addr(&mut self) -> Result<PeerAddr, VlqEncodingError> {
-        let buf = self.read_model_data()?;
+        let len = self.get_u8()?;
+        let buf = self.read_model_data(len as usize)?;
         PeerAddr::try_from(buf).map_err(|e| VlqEncodingError::Io(e.to_string()))
     }
 
-    pub(crate) fn read_features(&mut self) -> Result<Option<Vec<PeerFeature>>, VlqEncodingError> {
+    pub(crate) fn read_features(&mut self) -> Result<Option<Features>, VlqEncodingError> {
         let features_num = self.get_u8().ok();
         if let Some(mut num) = features_num {
-            let mut ret = Vec::with_capacity(num as usize);
+            let mut features = Vec::with_capacity(num as usize);
             while num != 0 {
-                // todo-minor move to parse feature?
                 let feature_id = self.get_u8()?;
-                let feature_data = self.read_model_data()?;
+                let feature_data = {
+                    let len = self.get_u16()?;
+                    self.read_model_data(len as usize)?
+                };
                 let feature_res = parse_feature(feature_id, feature_data)?;
-                ret.push(feature_res);
+                features.push(feature_res);
                 num -= 1;
             }
-            return Ok(Some(ret));
+            return Features::try_new(features).map(|f| Some(f)).map_err(|e| VlqEncodingError::Io(e.to_string()));
         }
         return Ok(None);
     }
 
-    fn read_model_data(&mut self) -> Result<Vec<u8>, VlqEncodingError> {
-        let len = self.get_u16()?; // todo-crucial potentially dangerous, should be discussed
-        let mut buf = vec![0; len as usize];
+    fn read_model_data(&mut self, len: usize) -> Result<Vec<u8>, VlqEncodingError> {
+        let mut buf = vec![0; len];
         self.read_exact(&mut buf).map_err(VlqEncodingError::from)?;
         Ok(buf)
     }

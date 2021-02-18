@@ -39,7 +39,7 @@ impl PeerAddr {
         let port = {
             let port_start = data.len() - Self::SIZE_PORT;
             let mut vlq_reader = default_vlq_reader(&data[port_start..]); // todo-minor move to utils?
-            vlq_reader.get_u16().expect("internal error: port bytes slice len != 2") // todo-crucial 4 bytes??
+            vlq_reader.get_u16().expect("internal error: port bytes slice len != 2")
         };
 
         Ok(Self(SocketAddr::new(ip_addr, port)))
@@ -60,7 +60,7 @@ impl PeerAddr {
                 vlq_writer.write_all(sock6.ip().octets().as_ref()).map_err(ModelError::CannotSerializeData)?;
             }
         };
-        vlq_writer.put_u16(inner.port()).map_err(ModelError::CannotSerializeData)?; // todo-crucial 4 bytes??
+        vlq_writer.put_u16(inner.port()).map_err(ModelError::CannotSerializeData)?;
 
         Ok(vlq_writer.into_inner())
     }

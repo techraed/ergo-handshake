@@ -6,10 +6,10 @@ use super::errors::ModelError;
 pub struct ShortString(String);
 
 impl ShortString {
-    pub const SIZE: usize = 255;
+    pub const MAX_SIZE: usize = 255;
 
     pub fn try_from(data: Vec<u8>) -> Result<Self, ModelError> {
-        if data.len() > Self::SIZE {
+        if data.len() > Self::MAX_SIZE {
             return Err(ModelError::InvalidShortStringLength(data.len()));
         }
         let s = String::from_utf8(data).map_err(ModelError::InvalidUtf8Buffer)?;

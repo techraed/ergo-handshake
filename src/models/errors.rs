@@ -3,11 +3,13 @@ use std::string::FromUtf8Error;
 
 use thiserror::Error;
 
-use crate::models::{PeerAddr, ShortString};
+use super::features::Features;
+use super::peer_addr::PeerAddr;
+use super::short_string::ShortString;
 
 #[derive(Error, Debug)]
 pub enum ModelError {
-    #[error("Can't create ShortString from buffer with length {0}. Should be {}", ShortString::SIZE)]
+    #[error("Can't create ShortString from buffer with length {0}. Should be {}", ShortString::MAX_SIZE)]
     InvalidShortStringLength(usize),
     #[error("Received invalid data: {0}")]
     InvalidUtf8Buffer(#[source] FromUtf8Error),
@@ -17,6 +19,8 @@ pub enum ModelError {
         PeerAddr::SIZE_IPv6_SOCKET
     )]
     InvalidPeerAddrLength(usize),
+    #[error("Can't create Features from features sequence with length {0}. Should be {}", Features::MAX_SIZE)]
+    InvalidFeaturesLength(usize),
     #[error("Model can't be serialized: {0}")]
     CannotSerializeData(#[source] io::Error),
 }

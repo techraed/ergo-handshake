@@ -1,6 +1,6 @@
 use sigma_ser::vlq_encode::{ReadSigmaVlqExt, VlqEncodingError, WriteSigmaVlqExt};
 
-use crate::models::{PeerAddr, PeerFeature, ShortString, Version};
+use crate::models::{Features, PeerAddr, PeerFeature, ShortString, Version};
 use crate::utils::{default_vlq_reader, default_vlq_writer, make_timestamp, HSSpecReader, HSSpecWriter};
 
 #[derive(Debug, PartialEq, Eq)]
@@ -9,7 +9,7 @@ pub struct Handshake {
     pub version: Version,
     pub peer_name: ShortString,
     pub pub_address: Option<PeerAddr>,
-    pub features: Option<Vec<PeerFeature>>, // todo-crucial 255 max?? ref to HSSpecWriter::write_feature
+    pub features: Option<Features>,
 }
 
 // todo-minor HandshakeParser/SerializerError

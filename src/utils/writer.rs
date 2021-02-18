@@ -1,9 +1,10 @@
 use std::io;
 
-use sigma_ser::vlq_encode::{VlqEncodingError, WriteSigmaVlqExt};
+use sigma_ser::vlq_encode::{ReadSigmaVlqExt, VlqEncodingError, WriteSigmaVlqExt};
 use std::ops::{Deref, DerefMut};
 
-use crate::models::{serialize_feature, PeerAddr, PeerFeature, ShortString, Version};
+use crate::models::{serialize_feature, Features, PeerAddr, PeerFeature, ShortString, Version};
+use crate::utils::default_vlq_reader;
 
 pub(crate) type DefaultWriter<T> = io::Cursor<T>;
 
@@ -14,6 +15,20 @@ pub(crate) fn default_vlq_writer<T: AsRef<[u8]>>(data: T) -> DefaultWriter<T> {
 }
 
 impl<W: WriteSigmaVlqExt> HSSpecWriter<W> {
+    // todo-minor discuss putting lengths approaches: 1) doing it by write fns or 2) by 1 generally used `write_model`, which puts usize len as u16.
+    // argument for the second approach is in `write_feature` and in simple test
+    // #[test]
+    // fn simple() {
+    //     let mut w = default_vlq_writer(Vec::new());
+    //     w.put_usize_as_u16(10);
+    //     w.put_u8(10);
+    //     let inner = w.into_inner();
+    //     let mut r = default_vlq_reader(inner);
+    //     let a = r.get_u8().unwrap();
+    //     let b = r.get_u16().unwrap();
+    //     assert_eq!(10, a);
+    //     assert_eq!(10, b);
+    // }
     pub(crate) fn new(writer: W) -> Self {
         Self(writer)
     }
@@ -24,34 +39,34 @@ impl<W: WriteSigmaVlqExt> HSSpecWriter<W> {
 
     pub(crate) fn write_short_string(&mut self, short_string: &ShortString) -> Result<(), VlqEncodingError> {
         let data = short_string.as_bytes();
-        self.write_model_data(data)
+        self.put_u8(data.len() as u8)?;
+        self.write(&data).map(|_| ()).map_err(VlqEncodingError::from)
     }
 
     pub(crate) fn write_version(&mut self, version: &Version) -> Result<(), VlqEncodingError> {
         let Version(data) = version;
-        self.write_all(data).map_err(|e| VlqEncodingError::Io(e.to_string()))
+        self.write_all(data).map_err(VlqEncodingError::from)
     }
 
     pub(crate) fn write_peer_addr(&mut self, peer_addr: &PeerAddr) -> Result<(), VlqEncodingError> {
         let data = peer_addr.as_bytes().map_err(|e| VlqEncodingError::Io(e.to_string()))?;
-        self.write_model_data(&data)
+        self.put_u8(data.len() as u8)?;
+        self.write(&data).map(|_| ()).map_err(VlqEncodingError::from)
     }
 
-    pub(crate) fn write_features(&mut self, features: &[PeerFeature]) -> Result<(), VlqEncodingError> {
-        self.put_usize_as_u16(features.len())?; // todo-crucial potentially dangerous, should be discussed
-        for feature in features {
-            self.put_u8(feature.get_id())?;
-            let data = serialize_feature(feature)?;
-            self.write_model_data(&data)?;
+    pub(crate) fn write_features(&mut self, features: &Features) -> Result<(), VlqEncodingError> {
+        self.put_u8(features.len() as u8)?;
+        for feature in features.iter() {
+            self.write_feature(feature)?;
         }
         Ok(())
     }
 
-    fn write_model_data(&mut self, data: &[u8]) -> Result<(), VlqEncodingError> {
-        let len = data.len();
-        self.put_usize_as_u16(len)?; // todo-crucial potentially dangerous, should be discussed
-        let _ = self.write(data)?;
-        Ok(())
+    fn write_feature(&mut self, feature: &PeerFeature) -> Result<(), VlqEncodingError> {
+        self.put_u8(feature.get_id())?;
+        let data = serialize_feature(feature)?;
+        self.put_u16(data.len() as u16)?;
+        self.write(&data).map(|_| ()).map_err(VlqEncodingError::from)
     }
 }
 
