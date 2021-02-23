@@ -1,4 +1,4 @@
-use std::io::{Write, Read};
+use std::io::{Read, Write};
 use std::ops::{Deref, DerefMut};
 
 use sigma_ser::vlq_encode::{ReadSigmaVlqExt, VlqEncodingError, WriteSigmaVlqExt};
@@ -6,8 +6,8 @@ use sigma_ser::vlq_encode::{ReadSigmaVlqExt, VlqEncodingError, WriteSigmaVlqExt}
 use crate::utils::{default_vlq_reader, default_vlq_writer};
 
 use super::errors::ModelError;
-use super::peer_addr::PeerAddr;
 use super::magic::MagicBytes;
+use super::peer_addr::PeerAddr;
 
 pub(crate) use parse::parse_feature;
 pub(crate) use serialize::serialize_feature;
@@ -110,7 +110,7 @@ mod serialize {
     // todo-minor why not ModelError
     fn serialize_session_id(session_id: &SessionId) -> Result<Vec<u8>, VlqEncodingError> {
         let mut vlq_writer = default_vlq_writer(Vec::new());
-        let SessionId { magic, session_id} = session_id;
+        let SessionId { magic, session_id } = session_id;
         let MagicBytes(magic) = magic;
 
         vlq_writer.write(magic)?;
