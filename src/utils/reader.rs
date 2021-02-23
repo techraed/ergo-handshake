@@ -4,7 +4,7 @@ use std::ops::{Deref, DerefMut};
 use sigma_ser::peekable_reader::PeekableReader;
 use sigma_ser::vlq_encode::{ReadSigmaVlqExt, VlqEncodingError};
 
-use crate::models::{parse_feature, Features, PeerAddr, PeerFeature, ShortString, Version};
+use crate::models::{parse_feature, Features, PeerAddr, ShortString, Version};
 
 pub(crate) type DefaultVlqReader<T> = PeekableReader<io::Cursor<T>>;
 
@@ -50,8 +50,8 @@ impl<R: ReadSigmaVlqExt> HSSpecReader<R> {
     }
 
     pub(crate) fn read_peer_addr(&mut self) -> Result<PeerAddr, VlqEncodingError> {
-        let len = self.get_u8()? - Self::PORT_EXCESS_BYTES;
-        let buf = self.read_model_data(len as usize)?;
+        let len = self.get_u8()?;
+        let buf = self.read_model_data((len - Self::PORT_EXCESS_BYTES) as usize)?; // todo-crucial check underflow!
         PeerAddr::try_from(buf).map_err(|e| VlqEncodingError::Io(e.to_string()))
     }
 

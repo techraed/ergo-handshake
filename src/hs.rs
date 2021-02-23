@@ -96,8 +96,6 @@ mod tests {
             println!("{:?}", b);
             println!("{:?}", Handshake::parse(b));
         }
-
-
     }
 
     #[test]

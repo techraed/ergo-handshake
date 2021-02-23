@@ -1,6 +1,6 @@
 use std::io;
 
-use sigma_ser::vlq_encode::{ReadSigmaVlqExt, VlqEncodingError, WriteSigmaVlqExt};
+use sigma_ser::vlq_encode::{VlqEncodingError, WriteSigmaVlqExt};
 use std::ops::{Deref, DerefMut};
 
 use crate::models::{serialize_feature, Features, PeerAddr, PeerFeature, ShortString, Version};

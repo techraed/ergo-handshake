@@ -3,6 +3,7 @@ pub use features::{Features, Mode, PeerFeature};
 pub use peer_addr::*;
 pub use short_string::*;
 pub use version::*;
+pub use magic::*;
 
 pub(crate) use features::{parse_feature, serialize_feature};
 
@@ -11,3 +12,4 @@ mod features;
 mod peer_addr;
 mod short_string;
 mod version;
+mod magic;
