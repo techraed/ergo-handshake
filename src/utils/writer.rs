@@ -14,6 +14,10 @@ pub(crate) fn default_vlq_writer<T: AsRef<[u8]>>(data: T) -> DefaultWriter<T> {
 }
 
 impl<W: WriteSigmaVlqExt> HSSpecWriter<W> {
+    // Used due to public address (de)serialization bug in the reference ergo-node:
+    // port length is encoded as 4 bytes rather than 2: https://github.com/hyperledger-labs/Scorex/blob/30f3bea5ddb660f479964b7879912cebc4ee467e/src/main/scala/scorex/core/network/PeerSpec.scala#L49
+    const PORT_EXCESS_BYTES: u8 = 2;
+
     // todo-minor discuss putting lengths approaches: 1) doing it by write fns or 2) by 1 generally used `write_model`, which puts usize len as u16.
     // argument for the second approach is in `write_feature` and in simple test
     // #[test]
@@ -51,7 +55,7 @@ impl<W: WriteSigmaVlqExt> HSSpecWriter<W> {
 
     pub(crate) fn write_peer_addr(&mut self, peer_addr: &PeerAddr) -> Result<(), VlqEncodingError> {
         let data = peer_addr.as_bytes().map_err(|e| VlqEncodingError::Io(e.to_string()))?;
-        self.put_u8(data.len() as u8)?;
+        self.put_u8(data.len() as u8 + Self::PORT_EXCESS_BYTES)?;
         self.write(&data).map(|_| ()).map_err(VlqEncodingError::from)
     }
 

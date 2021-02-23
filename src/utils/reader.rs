@@ -16,6 +16,10 @@ pub(crate) fn default_vlq_reader<T: AsRef<[u8]>>(data: T) -> DefaultVlqReader<T>
 }
 
 impl<R: ReadSigmaVlqExt> HSSpecReader<R> {
+    // Used due to public address (de)serialization bug in the reference ergo-node:
+    // port length is encoded as 4 bytes rather than 2: https://github.com/hyperledger-labs/Scorex/blob/30f3bea5ddb660f479964b7879912cebc4ee467e/src/main/scala/scorex/core/network/PeerSpec.scala#L49
+    const PORT_EXCESS_BYTES: u8 = 2;
+
     // todo-minor discuss reading lengths approaches: 1) doing it by read fns (more safe) or 2) by 1 generally used `read_next_model` fn.
     // #[test]
     // fn simple() {
@@ -46,7 +50,7 @@ impl<R: ReadSigmaVlqExt> HSSpecReader<R> {
     }
 
     pub(crate) fn read_peer_addr(&mut self) -> Result<PeerAddr, VlqEncodingError> {
-        let len = self.get_u8()?;
+        let len = self.get_u8()? - Self::PORT_EXCESS_BYTES;
         let buf = self.read_model_data(len as usize)?;
         PeerAddr::try_from(buf).map_err(|e| VlqEncodingError::Io(e.to_string()))
     }
