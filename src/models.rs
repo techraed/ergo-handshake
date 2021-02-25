@@ -1,5 +1,5 @@
 pub use errors::*;
-pub use features::{Features, Mode, PeerFeature};
+pub use features::{Features, Mode, SessionId, PeerFeature};
 pub use magic::*;
 pub use peer_addr::*;
 pub use short_string::*;

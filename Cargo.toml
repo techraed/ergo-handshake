@@ -11,3 +11,6 @@ description = "Ergo P2P-Handshake implemented in accordance to spec https://gith
 hex = "0.4.2"
 sigma-ser = "0.2.0"
 thiserror = "1.0.23"
+
+[dev-dependencies]
+rand = "0.8.3"

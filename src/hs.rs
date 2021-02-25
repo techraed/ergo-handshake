@@ -74,6 +74,12 @@ impl Handshake {
     }
 }
 
+// todo-minor proper error types
+pub fn _handshaking(_hs_msg: Handshake) -> Result<Handshake, ()> {
+    // look at node_test
+    todo!()
+}
+
 #[cfg(test)]
 mod tests {
     use hex;
@@ -82,6 +88,58 @@ mod tests {
 
     fn hex_to_bytes(s: &str) -> Vec<u8> {
         hex::decode(s).expect("internal error: invalid hex str")
+    }
+    fn bytes_to_hex<T: AsRef<[u8]>>(b: T) -> String {
+        hex::encode(b)
+    }
+
+    fn default_hs() -> Handshake {
+        use std::convert::TryFrom;
+        use crate::{Mode, SessionId, MagicBytes};
+        use rand::{thread_rng, Rng};
+
+        let ts = make_timestamp();
+        let agent_name = ShortString::try_from("ergoref".as_bytes().to_vec()).unwrap();
+        let version = Version([3,3,6]);
+        let peer_name = ShortString::try_from("ergo-mainnet-3.3.6".as_bytes().to_vec()).unwrap();
+        let pub_address = None;
+        let features = {
+            let m = PeerFeature::Mode(Mode {
+                state_type: 0,
+                is_verifying: true,
+                nipopow_suffix_len: None,
+                blocks_to_keep: -1
+            });
+            let s = PeerFeature::SessionId(SessionId { magic: MagicBytes([1, 0 , 2, 4]), session_id: thread_rng().gen::<i64>() });
+            Features::try_new(vec![m, s]).unwrap()
+        };
+        let features = Some(features);
+        Handshake {
+            agent_name,
+            version,
+            peer_name,
+            pub_address,
+            features
+        }
+    }
+
+    #[test]
+    fn node_test() {
+        use std::net::TcpStream;
+        use std::io::{Write, Read};
+
+        let mut tcp_conn = TcpStream::connect("0.0.0.0:9030").unwrap();
+        let hs = default_hs();
+        let hs_bytes = hs.serialize().unwrap();
+        println!("hs bytes {:?}", hs_bytes);
+        println!("hs bytes hex {:?}", bytes_to_hex(&hs_bytes));
+        tcp_conn.write_all(&hs_bytes).unwrap();
+        let mut read_buf = [0; 2048];
+        tcp_conn.read(&mut read_buf).unwrap();
+        println!("received bytes {:?}", read_buf.as_ref());
+        println!("received bytes hex {:?}", bytes_to_hex(read_buf.as_ref()));
+        let received_hs = Handshake::parse(read_buf.as_ref());
+        println!("HS received {:?}", received_hs);
     }
 
     #[test]
