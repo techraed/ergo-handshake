@@ -52,8 +52,11 @@ impl<R: ReadSigmaVlqExt> HSSpecReader<R> {
 
     pub(crate) fn read_peer_addr(&mut self) -> Result<PeerAddr, VlqEncodingError> {
         let len = self.get_u8()?;
-        let buf = self.read_model_data((len - Self::PORT_EXCESS_BYTES) as usize)?; // todo-crucial check underflow!
-        PeerAddr::try_from(buf).map_err(|e| VlqEncodingError::Io(e.to_string()))
+        if let Some(len) = len.checked_sub(Self::PORT_EXCESS_BYTES) {
+            let buf = self.read_model_data(len as usize)?;
+            PeerAddr::try_from(buf).map_err(|e| VlqEncodingError::Io(e.to_string()))
+        }
+        return Err(VlqEncodingError::Io("todo msg".to_string()))
     }
 
     pub(crate) fn read_features(&mut self) -> Result<Option<Features>, VlqEncodingError> {

@@ -34,7 +34,7 @@ pub struct Mode {
 #[derive(Debug, PartialEq, Eq)]
 pub struct SessionId {
     pub magic: MagicBytes,
-    pub session_id: i64, // todo-crucial u64?
+    pub session_id: i64,
 }
 
 impl Features {

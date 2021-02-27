@@ -82,7 +82,6 @@ impl Handshake {
 
 // todo-minor proper error types
 pub fn handshaking<A: ToSocketAddrs>(addr: A, hs_msg: Handshake) -> Result<(TcpStream, Handshake), ()> {
-    // todo-minor HsStream?
     let mut conn = TcpStream::connect(addr).map_err(|_| ())?;
     conn.set_read_timeout(Some(HS_TIMEOUT)).expect("internal error: zero duration passed as read timeout");
 
