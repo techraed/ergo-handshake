@@ -1,7 +1,13 @@
+use std::io::{Write, Read, ErrorKind};
+use std::time::Duration;
+use std::net::{ToSocketAddrs, TcpStream};
+
 use sigma_ser::vlq_encode::{ReadSigmaVlqExt, VlqEncodingError, WriteSigmaVlqExt};
 
 use crate::models::{Features, PeerAddr, PeerFeature, ShortString, Version};
 use crate::utils::{default_vlq_reader, default_vlq_writer, make_timestamp, HSSpecReader, HSSpecWriter};
+
+const HS_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Handshake {
@@ -75,9 +81,31 @@ impl Handshake {
 }
 
 // todo-minor proper error types
-pub fn _handshaking(_hs_msg: Handshake) -> Result<Handshake, ()> {
-    // look at node_test
-    todo!()
+pub fn handshaking<A: ToSocketAddrs>(addr: A, hs_msg: Handshake) -> Result<(TcpStream, Handshake), ()> {
+    // todo-minor HsStream?
+    let mut conn = TcpStream::connect(addr).map_err(|_| ())?;
+    conn.set_read_timeout(Some(HS_TIMEOUT)).expect("internal error: zero duration passed as read timeout");
+
+    let hs_bytes = hs_msg.serialize().map_err(|_| ())?;
+    send_hs(&mut conn, &hs_bytes)?;
+    read_hs(&mut conn).map(|hs| (conn, hs))
+}
+
+fn send_hs(conn: &mut TcpStream, data: &[u8]) -> Result<(), ()> {
+    conn.write_all(data).map_err(|_| ())?;
+    conn.flush().map_err(|_| ())
+}
+
+fn read_hs(conn: &mut TcpStream) -> Result<Handshake, ()> {
+    let mut buf = vec![0; 100];
+    match conn.read(&mut buf) {
+        Ok(_) => {
+            conn.set_read_timeout(None).expect("internal error: zero duration passed as read timeout");
+            println!("buf {:?}", hex::encode(&buf));
+            Handshake::parse(&buf).map_err(|_| ())
+        },
+        Err(_) => Err(())
+    }
 }
 
 #[cfg(test)]
@@ -125,21 +153,8 @@ mod tests {
 
     #[test]
     fn node_test() {
-        use std::net::TcpStream;
-        use std::io::{Write, Read};
-
-        let mut tcp_conn = TcpStream::connect("0.0.0.0:9030").unwrap();
         let hs = default_hs();
-        let hs_bytes = hs.serialize().unwrap();
-        println!("hs bytes {:?}", hs_bytes);
-        println!("hs bytes hex {:?}", bytes_to_hex(&hs_bytes));
-        tcp_conn.write_all(&hs_bytes).unwrap();
-        let mut read_buf = [0; 2048];
-        tcp_conn.read(&mut read_buf).unwrap();
-        println!("received bytes {:?}", read_buf.as_ref());
-        println!("received bytes hex {:?}", bytes_to_hex(read_buf.as_ref()));
-        let received_hs = Handshake::parse(read_buf.as_ref());
-        println!("HS received {:?}", received_hs);
+        assert!(handshaking("0.0.0.0:9030", hs).is_ok());
     }
 
     #[test]
