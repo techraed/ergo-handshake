@@ -1,9 +1,12 @@
 use std::io;
+use std::convert::TryInto;
 use std::ops::{Deref, DerefMut};
 
 use sigma_ser::vlq_encode::{VlqEncodingError, WriteSigmaVlqExt};
 
-use crate::models::{serialize_feature, Features, PeerAddr, PeerFeature, ShortString, Version};
+use crate::features::{Features, PeerFeature};
+use crate::models::{PeerAddr, ShortString, Version};
+use crate::models::ModelSerializeError; // todo-tmp
 
 pub(crate) type DefaultVlqWriter<T> = io::Cursor<T>;
 
@@ -54,7 +57,8 @@ impl<W: WriteSigmaVlqExt> HSSpecWriter<W> {
     }
 
     pub(crate) fn write_peer_addr(&mut self, peer_addr: &PeerAddr) -> Result<(), VlqEncodingError> {
-        let data = peer_addr.as_bytes().map_err(|e| VlqEncodingError::Io(e.to_string()))?;
+        let peer_addr = peer_addr.clone(); // todo-tmp
+        let data: Vec<u8> = peer_addr.try_into().expect("todo"); // todo-crucial!!;
         self.put_u8(data.len() as u8 + Self::PORT_EXCESS_BYTES)?;
         self.write(&data).map(|_| ()).map_err(VlqEncodingError::from)
     }
@@ -69,7 +73,7 @@ impl<W: WriteSigmaVlqExt> HSSpecWriter<W> {
 
     fn write_feature(&mut self, feature: &PeerFeature) -> Result<(), VlqEncodingError> {
         self.put_u8(feature.get_id())?;
-        let data = serialize_feature(feature)?;
+        let data: Vec<u8> = feature.try_into().expect("todo"); // todo-crucial!
         self.put_u16(data.len() as u16)?;
         self.write(&data).map(|_| ()).map_err(VlqEncodingError::from)
     }

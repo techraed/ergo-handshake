@@ -1,7 +1,7 @@
 use std::ops::Deref;
 use std::convert::TryFrom;
 
-use super::errors::ModelError;
+use super::errors::ModelParseError;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct ShortString(String);
@@ -12,13 +12,13 @@ impl ShortString {
 
 // todo-minor 1) &[u8], 2) try from str, String?
 impl TryFrom<Vec<u8>> for ShortString {
-    type Error = ModelError;
+    type Error = ModelParseError;
 
     fn try_from(data: Vec<u8>) -> Result<Self, Self::Error> {
         if data.len() > Self::MAX_SIZE {
-            return Err(ModelError::InvalidShortStringLength(data.len()));
+            return Err(ModelParseError::InvalidShortStringLength(data.len()));
         }
-        let s = String::from_utf8(data).map_err(ModelError::InvalidUtf8Buffer)?;
+        let s = String::from_utf8(data)?;
         Ok(Self(s))
     }
 }
