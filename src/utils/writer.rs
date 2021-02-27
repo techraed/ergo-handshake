@@ -5,11 +5,11 @@ use std::ops::{Deref, DerefMut};
 
 use crate::models::{serialize_feature, Features, PeerAddr, PeerFeature, ShortString, Version};
 
-pub(crate) type DefaultWriter<T> = io::Cursor<T>;
+pub(crate) type DefaultVlqWriter<T> = io::Cursor<T>;
 
 pub(crate) struct HSSpecWriter<W: WriteSigmaVlqExt>(W);
 
-pub(crate) fn default_vlq_writer<T: AsRef<[u8]>>(data: T) -> DefaultWriter<T> {
+pub(crate) fn default_vlq_writer<T: AsRef<[u8]>>(data: T) -> DefaultVlqWriter<T> {
     io::Cursor::new(data)
 }
 
