@@ -13,9 +13,9 @@ pub enum ModelParseError {
     #[error("Received invalid data: {0}")]
     InvalidUtf8Buffer(#[from] FromUtf8Error),
     #[error(
-    "Can't create HSPeerAddr from buffer with length {0}. Should be {} or {}",
-    PeerAddr::SIZE_IPv4_SOCKET,
-    PeerAddr::SIZE_IPv6_SOCKET
+        "Can't create HSPeerAddr from buffer with length {0}. Should be {} or {}",
+        PeerAddr::SIZE_IPv4_SOCKET,
+        PeerAddr::SIZE_IPv6_SOCKET
     )]
     InvalidPeerAddrLength(usize),
 }

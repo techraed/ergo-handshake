@@ -1,5 +1,5 @@
-use std::io;
 use std::convert::TryFrom;
+use std::io;
 use std::ops::{Deref, DerefMut};
 
 use sigma_ser::peekable_reader::PeekableReader;

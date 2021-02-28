@@ -1,12 +1,12 @@
-use std::io;
 use std::convert::TryInto;
+use std::io;
 use std::ops::{Deref, DerefMut};
 
 use sigma_ser::vlq_encode::{VlqEncodingError, WriteSigmaVlqExt};
 
 use crate::features::{Features, PeerFeature};
-use crate::models::{PeerAddr, ShortString, Version};
 use crate::models::ModelSerializeError; // todo-tmp
+use crate::models::{PeerAddr, ShortString, Version};
 
 // todo-minor try better: it should somehow define, that vlq is used
 pub trait TryIntoVlq {

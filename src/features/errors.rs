@@ -15,17 +15,18 @@ pub enum FeaturesError {
     #[error("Can't serialize feature: {0}")]
     CannotSerializeFeature(#[source] FeatureSerializeError),
     #[error("Can't parse feature from received data: {0}")]
-    CannotParseFeature(#[source] FeatureParseError)
+    CannotParseFeature(#[source] FeatureParseError),
 }
 
 #[derive(Error, Debug)]
 pub enum FeatureParseError {
     #[error("Feature can't be read from resource: {0}")]
     CannotReadData(#[from] io::Error),
-    #[error("Decoding data failed")] // todo-crucial VlqEncodingError doesn't impl Error. VlqDecodingError::VlqDecodingError tells us nothing
+    #[error("Decoding data failed")]
+    // todo-crucial VlqEncodingError doesn't impl Error. VlqDecodingError::VlqDecodingError tells us nothing
     CannotVlqDecodeData(VlqEncodingError),
     #[error("{0}")]
-    CannotParseLocalAddress(#[source] ModelParseError)
+    CannotParseLocalAddress(#[source] ModelParseError),
 }
 
 #[derive(Error, Debug)]
@@ -33,7 +34,7 @@ pub enum FeatureSerializeError {
     #[error("{0}")]
     CannotSerializeLocalAddress(#[source] ModelSerializeError),
     #[error("Feature can't be written to resource: {0}")]
-    CannotWriteData(#[from] io::Error)
+    CannotWriteData(#[from] io::Error),
 }
 
 // tmp, until VlqEncodingError is fixed

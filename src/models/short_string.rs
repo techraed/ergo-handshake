@@ -1,5 +1,5 @@
-use std::ops::Deref;
 use std::convert::TryFrom;
+use std::ops::Deref;
 
 use super::errors::ModelParseError;
 

@@ -1,8 +1,8 @@
 use sigma_ser::vlq_encode::{ReadSigmaVlqExt, WriteSigmaVlqExt};
 
-use crate::utils::{default_vlq_writer, default_vlq_reader, TryIntoVlq, TryFromVlq};
+use crate::utils::{default_vlq_reader, default_vlq_writer, TryFromVlq, TryIntoVlq};
 
-use super::{FeatureSerializeError, FeatureParseError};
+use super::{FeatureParseError, FeatureSerializeError};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Mode {

@@ -2,17 +2,17 @@ use std::convert::TryFrom;
 use std::ops::{Deref, DerefMut};
 
 use crate::models::PeerAddr;
-use crate::utils::{TryIntoVlq, TryFromVlq};
+use crate::utils::{TryFromVlq, TryIntoVlq};
 
+pub use feature_errors::*;
 pub use mode::Mode;
 pub use session_id::SessionId;
-pub use feature_errors::*;
 
 use errors as feature_errors;
 
+mod errors;
 mod mode;
 mod session_id;
-mod errors;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Features(Vec<PeerFeature>);

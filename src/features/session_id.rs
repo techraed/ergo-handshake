@@ -1,11 +1,11 @@
-use std::io::{Write, Read};
+use std::io::{Read, Write};
 
-use sigma_ser::vlq_encode::{WriteSigmaVlqExt, ReadSigmaVlqExt};
+use sigma_ser::vlq_encode::{ReadSigmaVlqExt, WriteSigmaVlqExt};
 
 use crate::models::MagicBytes;
-use crate::utils::{default_vlq_reader, default_vlq_writer, TryIntoVlq, TryFromVlq};
+use crate::utils::{default_vlq_reader, default_vlq_writer, TryFromVlq, TryIntoVlq};
 
-use super::{FeatureSerializeError, FeatureParseError};
+use super::{FeatureParseError, FeatureSerializeError};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct SessionId {

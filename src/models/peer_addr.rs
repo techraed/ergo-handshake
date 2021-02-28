@@ -1,10 +1,10 @@
-use std::io::Write;
 use std::convert::TryFrom;
+use std::io::Write;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use sigma_ser::vlq_encode::{ReadSigmaVlqExt, WriteSigmaVlqExt};
 
-use crate::utils::{default_vlq_reader, default_vlq_writer, TryIntoVlq, TryFromVlq};
+use crate::utils::{default_vlq_reader, default_vlq_writer, TryFromVlq, TryIntoVlq};
 
 use super::errors::{ModelParseError, ModelSerializeError};
 

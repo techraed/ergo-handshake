@@ -1,6 +1,6 @@
-use std::io::{Write, Read};
+use std::io::{Read, Write};
+use std::net::{TcpStream, ToSocketAddrs};
 use std::time::Duration;
-use std::net::{ToSocketAddrs, TcpStream};
 
 const HS_TIMEOUT: Duration = Duration::from_secs(30);
 
@@ -10,7 +10,8 @@ use crate::utils::make_timestamp;
 // todo-minor proper error types
 pub fn handshaking<A: ToSocketAddrs>(addr: A, hs_msg: Handshake) -> Result<(TcpStream, Handshake), ()> {
     let mut conn = TcpStream::connect(addr).map_err(|_| ())?;
-    conn.set_read_timeout(Some(HS_TIMEOUT)).expect("internal error: zero duration passed as read timeout");
+    conn.set_read_timeout(Some(HS_TIMEOUT))
+        .expect("internal error: zero duration passed as read timeout");
 
     let hs_bytes = hs_msg.serialize().map_err(|_| ())?;
     send_hs(&mut conn, &hs_bytes)?;
@@ -29,8 +30,8 @@ fn read_hs(conn: &mut TcpStream) -> Result<Handshake, ()> {
             conn.set_read_timeout(None).expect("internal error: zero duration passed as read timeout");
             println!("buf {:?}", hex::encode(&buf));
             Handshake::parse(&buf).map_err(|_| ())
-        },
-        Err(_) => Err(())
+        }
+        Err(_) => Err(()),
     }
 }
 

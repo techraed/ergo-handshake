@@ -1,10 +1,10 @@
-use std::io::{Write, Read, ErrorKind};
+use std::io::{ErrorKind, Read, Write};
 
 use sigma_ser::vlq_encode::{ReadSigmaVlqExt, VlqEncodingError, WriteSigmaVlqExt};
 
-use crate::{Features, PeerFeature};
 use crate::models::{PeerAddr, ShortString, Version};
 use crate::utils::{default_vlq_reader, default_vlq_writer, make_timestamp, HSSpecReader, HSSpecWriter};
+use crate::{Features, PeerFeature};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Handshake {
