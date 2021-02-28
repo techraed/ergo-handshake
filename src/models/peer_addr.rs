@@ -4,7 +4,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use sigma_ser::vlq_encode::{ReadSigmaVlqExt, WriteSigmaVlqExt};
 
-use crate::utils::{default_vlq_reader, default_vlq_writer};
+use crate::utils::{default_vlq_reader, default_vlq_writer, TryIntoVlq};
 
 use super::errors::{ModelParseError, ModelSerializeError};
 
@@ -50,10 +50,10 @@ impl TryFrom<Vec<u8>> for PeerAddr {
     }
 }
 
-impl TryInto<Vec<u8>> for PeerAddr {
+impl TryIntoVlq for PeerAddr {
     type Error = ModelSerializeError;
 
-    fn try_into(self) -> Result<Vec<u8>, Self::Error> {
+    fn try_into_vlq(&self) -> Result<Vec<u8>, Self::Error> {
         let PeerAddr(inner) = self;
         let mut vlq_writer = {
             let buf_size = if inner.is_ipv4() { Self::SIZE_IPv4_SOCKET } else { Self::SIZE_IPv6_SOCKET };

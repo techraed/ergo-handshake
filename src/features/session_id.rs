@@ -4,7 +4,7 @@ use std::io::{Write, Read};
 use sigma_ser::vlq_encode::{WriteSigmaVlqExt, ReadSigmaVlqExt};
 
 use crate::models::MagicBytes;
-use crate::utils::{default_vlq_reader, default_vlq_writer};
+use crate::utils::{default_vlq_reader, default_vlq_writer, TryIntoVlq};
 
 use super::{FeatureSerializeError, FeatureParseError};
 
@@ -14,10 +14,10 @@ pub struct SessionId {
     pub session_id: i64,
 }
 
-impl TryInto<Vec<u8>> for &SessionId {
+impl TryIntoVlq for SessionId {
     type Error = FeatureSerializeError;
 
-    fn try_into(self) -> Result<Vec<u8>, Self::Error> {
+    fn try_into_vlq(&self) -> Result<Vec<u8>, Self::Error> {
         let mut vlq_writer = default_vlq_writer(Vec::new());
         let SessionId { magic, session_id } = self;
         let MagicBytes(magic) = magic;

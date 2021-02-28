@@ -2,7 +2,7 @@ use std::convert::{TryInto, TryFrom};
 
 use sigma_ser::vlq_encode::{ReadSigmaVlqExt, WriteSigmaVlqExt};
 
-use crate::utils::{default_vlq_writer, default_vlq_reader};
+use crate::utils::{default_vlq_writer, default_vlq_reader, TryIntoVlq};
 
 use super::{FeatureSerializeError, FeatureParseError};
 
@@ -14,12 +14,12 @@ pub struct Mode {
     pub blocks_to_keep: i32,
 }
 
-impl TryFrom<&Mode> for Vec<u8> {
+impl TryIntoVlq for Mode {
     type Error = FeatureSerializeError;
 
-    fn try_into(&self) -> Result<Vec<u8>, Self::Error> {
+    fn try_into_vlq(&self) -> Result<Vec<u8>, Self::Error> {
         let mut vlq_writer = default_vlq_writer(Vec::new());
-        let Mode { state_type, is_verifying, nipopow_suffix_len, blocks_to_keep} = self;
+        let &Mode { state_type, is_verifying, nipopow_suffix_len, blocks_to_keep} = self;
 
         vlq_writer.put_u8(state_type)?;
         vlq_writer.put_u8(is_verifying as u8)?;
