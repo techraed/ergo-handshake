@@ -1,10 +1,10 @@
 use std::io::Write;
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use sigma_ser::vlq_encode::{ReadSigmaVlqExt, WriteSigmaVlqExt};
 
-use crate::utils::{default_vlq_reader, default_vlq_writer, TryIntoVlq};
+use crate::utils::{default_vlq_reader, default_vlq_writer, TryIntoVlq, TryFromVlq};
 
 use super::errors::{ModelParseError, ModelSerializeError};
 
@@ -23,10 +23,10 @@ impl PeerAddr {
     pub(crate) const SIZE_PORT: usize = 2;
 }
 
-impl TryFrom<Vec<u8>> for PeerAddr {
+impl TryFromVlq for PeerAddr {
     type Error = ModelParseError;
 
-    fn try_from(data: Vec<u8>) -> Result<Self, Self::Error> {
+    fn try_from_vlq(data: Vec<u8>) -> Result<Self, Self::Error> {
         let ip_addr = {
             match data.len() {
                 Self::SIZE_IPv4_SOCKET => {

@@ -8,6 +8,13 @@ use sigma_ser::vlq_encode::{ReadSigmaVlqExt, VlqEncodingError};
 use crate::features::{Features, PeerFeature};
 use crate::models::{PeerAddr, ShortString, Version};
 
+// todo-minor try better: it should somehow define, that vlq is used
+pub trait TryFromVlq: Sized {
+    type Error;
+
+    fn try_from_vlq(data: Vec<u8>) -> Result<Self, Self::Error>;
+}
+
 pub(crate) type DefaultVlqReader<T> = PeekableReader<io::Cursor<T>>;
 
 pub(crate) struct HSSpecReader<R: ReadSigmaVlqExt>(R);
@@ -55,7 +62,7 @@ impl<R: ReadSigmaVlqExt> HSSpecReader<R> {
         let len = self.get_u8()?;
         if let Some(len) = len.checked_sub(Self::PORT_EXCESS_BYTES) {
             let buf = self.read_model_data(len as usize)?;
-            return PeerAddr::try_from(buf).map_err(|e| VlqEncodingError::Io(e.to_string()));
+            return PeerAddr::try_from_vlq(buf).map_err(|e| VlqEncodingError::Io(e.to_string()));
         }
         Err(VlqEncodingError::Io("todo msg".to_string()))
     }

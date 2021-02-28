@@ -22,8 +22,8 @@ pub enum FeaturesError {
 pub enum FeatureParseError {
     #[error("Feature can't be read from resource: {0}")]
     CannotReadData(#[from] io::Error),
-    #[error("TODO MESSAGE")] // todo-crucial VLQ doesn't impl Error
-    CannotVlqDecodeData(String),
+    #[error("Decoding data failed")] // todo-minor VlqEncodingError doesn't impl Error. VlqDecodingError::VlqDecodingError tells us nothing
+    CannotVlqDecodeData(VlqEncodingError),
     #[error("{0}")]
     CannotParseLocalAddress(#[source] ModelParseError)
 }
@@ -36,9 +36,9 @@ pub enum FeatureSerializeError {
     CannotWriteData(#[from] io::Error)
 }
 
-// todo-crucial VLQ doesn't impl Error
+// tmp until VlqEncodingError is fixed
 impl From<VlqEncodingError> for FeatureParseError {
-    fn from(e: VlqEncodingError) -> Self {
-        FeatureParseError::CannotVlqDecodeData("TODO".to_string())
+    fn from(err: VlqEncodingError) -> Self {
+        FeatureParseError::CannotVlqDecodeData(err)
     }
 }

@@ -1,14 +1,14 @@
+use std::convert::TryFrom;
 use std::ops::{Deref, DerefMut};
 
 use crate::models::PeerAddr;
-use crate::utils::{default_vlq_reader, default_vlq_writer, TryIntoVlq};
+use crate::utils::{default_vlq_reader, default_vlq_writer, TryIntoVlq, TryFromVlq};
 
 pub use mode::Mode;
 pub use session_id::SessionId;
 pub use feature_errors::*;
 
 use errors as feature_errors;
-use std::convert::{TryInto, TryFrom};
 
 mod mode;
 mod session_id;
@@ -65,6 +65,22 @@ impl PeerFeature {
     }
 }
 
+impl TryFrom<(u8, Vec<u8>)> for PeerFeature {
+    type Error = FeaturesError;
+
+    fn try_from((id, data): (u8, Vec<u8>)) -> Result<Self, Self::Error> {
+        let res = match id {
+            PeerFeature::MODE_ID => Mode::try_from_vlq(data).map(PeerFeature::Mode),
+            PeerFeature::LOCAL_ADDR_ID => PeerAddr::try_from_vlq(data)
+                .map(PeerFeature::LocalAddr)
+                .map_err(FeatureParseError::CannotParseLocalAddress),
+            PeerFeature::SESSION_ID => SessionId::try_from_vlq(data).map(PeerFeature::SessionId),
+            _ => Ok(PeerFeature::Unrecognized),
+        };
+        res.map_err(FeaturesError::CannotParseFeature)
+    }
+}
+
 impl TryIntoVlq for PeerFeature {
     type Error = FeaturesError;
 
@@ -76,21 +92,5 @@ impl TryIntoVlq for PeerFeature {
             PeerFeature::Unrecognized => panic!("unrecognized features used in handshake instance"),
         };
         res.map_err(FeaturesError::CannotSerializeFeature)
-    }
-}
-
-impl TryFrom<(u8, Vec<u8>)> for PeerFeature {
-    type Error = FeaturesError;
-
-    fn try_from((id, data): (u8, Vec<u8>)) -> Result<Self, Self::Error> {
-        let res = match id {
-            PeerFeature::MODE_ID => Mode::try_from(data).map(PeerFeature::Mode),
-            PeerFeature::LOCAL_ADDR_ID => PeerAddr::try_from(data)
-                .map(PeerFeature::LocalAddr)
-                .map_err(FeatureParseError::CannotParseLocalAddress),
-            PeerFeature::SESSION_ID => SessionId::try_from(data).map(PeerFeature::SessionId),
-            _ => Ok(PeerFeature::Unrecognized),
-        };
-        res.map_err(FeaturesError::CannotParseFeature)
     }
 }

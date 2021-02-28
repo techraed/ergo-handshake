@@ -2,7 +2,7 @@ use std::convert::{TryInto, TryFrom};
 
 use sigma_ser::vlq_encode::{ReadSigmaVlqExt, WriteSigmaVlqExt};
 
-use crate::utils::{default_vlq_writer, default_vlq_reader, TryIntoVlq};
+use crate::utils::{default_vlq_writer, default_vlq_reader, TryIntoVlq, TryFromVlq};
 
 use super::{FeatureSerializeError, FeatureParseError};
 
@@ -14,31 +14,10 @@ pub struct Mode {
     pub blocks_to_keep: i32,
 }
 
-impl TryIntoVlq for Mode {
-    type Error = FeatureSerializeError;
-
-    fn try_into_vlq(&self) -> Result<Vec<u8>, Self::Error> {
-        let mut vlq_writer = default_vlq_writer(Vec::new());
-        let &Mode { state_type, is_verifying, nipopow_suffix_len, blocks_to_keep} = self;
-
-        vlq_writer.put_u8(state_type)?;
-        vlq_writer.put_u8(is_verifying as u8)?;
-        if let Some(popow_suf) = nipopow_suffix_len {
-            vlq_writer.put_u8(1)?;
-            vlq_writer.put_u32(popow_suf)?;
-        } else {
-            vlq_writer.put_u8(0)?;
-        }
-        vlq_writer.put_i32(blocks_to_keep)?;
-
-        Ok(vlq_writer.into_inner())
-    }
-}
-
-impl TryFrom<Vec<u8>> for Mode {
+impl TryFromVlq for Mode {
     type Error = FeatureParseError;
 
-    fn try_from(data: Vec<u8>) -> Result<Self, Self::Error> {
+    fn try_from_vlq(data: Vec<u8>) -> Result<Self, Self::Error> {
         let mut vlq_reader = default_vlq_reader(data);
 
         let state_type = vlq_reader.get_u8()?;
@@ -59,5 +38,26 @@ impl TryFrom<Vec<u8>> for Mode {
             nipopow_suffix_len,
             blocks_to_keep,
         })
+    }
+}
+
+impl TryIntoVlq for Mode {
+    type Error = FeatureSerializeError;
+
+    fn try_into_vlq(&self) -> Result<Vec<u8>, Self::Error> {
+        let mut vlq_writer = default_vlq_writer(Vec::new());
+        let &Mode { state_type, is_verifying, nipopow_suffix_len, blocks_to_keep} = self;
+
+        vlq_writer.put_u8(state_type)?;
+        vlq_writer.put_u8(is_verifying as u8)?;
+        if let Some(popow_suf) = nipopow_suffix_len {
+            vlq_writer.put_u8(1)?;
+            vlq_writer.put_u32(popow_suf)?;
+        } else {
+            vlq_writer.put_u8(0)?;
+        }
+        vlq_writer.put_i32(blocks_to_keep)?;
+
+        Ok(vlq_writer.into_inner())
     }
 }
