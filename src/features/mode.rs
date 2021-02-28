@@ -1,5 +1,3 @@
-use std::convert::{TryInto, TryFrom};
-
 use sigma_ser::vlq_encode::{ReadSigmaVlqExt, WriteSigmaVlqExt};
 
 use crate::utils::{default_vlq_writer, default_vlq_reader, TryIntoVlq, TryFromVlq};

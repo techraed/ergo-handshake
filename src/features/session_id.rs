@@ -1,4 +1,3 @@
-use std::convert::{TryInto, TryFrom};
 use std::io::{Write, Read};
 
 use sigma_ser::vlq_encode::{WriteSigmaVlqExt, ReadSigmaVlqExt};

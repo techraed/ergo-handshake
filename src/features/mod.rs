@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 use std::ops::{Deref, DerefMut};
 
 use crate::models::PeerAddr;
-use crate::utils::{default_vlq_reader, default_vlq_writer, TryIntoVlq, TryFromVlq};
+use crate::utils::{TryIntoVlq, TryFromVlq};
 
 pub use mode::Mode;
 pub use session_id::SessionId;
@@ -60,7 +60,7 @@ impl PeerFeature {
             PeerFeature::Mode(_) => Self::MODE_ID,
             PeerFeature::LocalAddr(_) => Self::LOCAL_ADDR_ID,
             PeerFeature::SessionId(_) => Self::SESSION_ID,
-            PeerFeature::Unrecognized => panic!("unrecognized features used in handshake instance"),
+            PeerFeature::Unrecognized => panic!("unrecognized features was used"),
         }
     }
 }
@@ -89,7 +89,7 @@ impl TryIntoVlq for PeerFeature {
             PeerFeature::Mode(mode) => mode.try_into_vlq(),
             PeerFeature::LocalAddr(peer_addr) => peer_addr.try_into_vlq().map_err(FeatureSerializeError::CannotSerializeLocalAddress),
             PeerFeature::SessionId(session_id) => session_id.try_into_vlq(),
-            PeerFeature::Unrecognized => panic!("unrecognized features used in handshake instance"),
+            PeerFeature::Unrecognized => panic!("unrecognized features was used"),
         };
         res.map_err(FeaturesError::CannotSerializeFeature)
     }

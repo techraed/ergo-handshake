@@ -12,9 +12,9 @@ use super::Features;
 pub enum FeaturesError {
     #[error("Can't create Futures with provided amount of PeerFeature - {0}, maximum allowed {}", Features::MAX_LEN)]
     TooMuchFeatures(usize),
-    #[error("{0}")]
+    #[error("Can't serialize feature: {0}")]
     CannotSerializeFeature(#[source] FeatureSerializeError),
-    #[error("{0}")]
+    #[error("Can't parse feature from received data: {0}")]
     CannotParseFeature(#[source] FeatureParseError)
 }
 
@@ -22,7 +22,7 @@ pub enum FeaturesError {
 pub enum FeatureParseError {
     #[error("Feature can't be read from resource: {0}")]
     CannotReadData(#[from] io::Error),
-    #[error("Decoding data failed")] // todo-minor VlqEncodingError doesn't impl Error. VlqDecodingError::VlqDecodingError tells us nothing
+    #[error("Decoding data failed")] // todo-crucial VlqEncodingError doesn't impl Error. VlqDecodingError::VlqDecodingError tells us nothing
     CannotVlqDecodeData(VlqEncodingError),
     #[error("{0}")]
     CannotParseLocalAddress(#[source] ModelParseError)
@@ -36,7 +36,7 @@ pub enum FeatureSerializeError {
     CannotWriteData(#[from] io::Error)
 }
 
-// tmp until VlqEncodingError is fixed
+// tmp, until VlqEncodingError is fixed
 impl From<VlqEncodingError> for FeatureParseError {
     fn from(err: VlqEncodingError) -> Self {
         FeatureParseError::CannotVlqDecodeData(err)

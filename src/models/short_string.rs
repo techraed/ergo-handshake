@@ -10,7 +10,6 @@ impl ShortString {
     pub const MAX_SIZE: usize = 255;
 }
 
-// todo-minor 1) &[u8], 2) try from str, String?
 impl TryFrom<Vec<u8>> for ShortString {
     type Error = ModelParseError;
 

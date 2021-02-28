@@ -1,4 +1,4 @@
-use std::io::{Write, Read, ErrorKind};
+use std::io::{Write, Read};
 use std::time::Duration;
 use std::net::{ToSocketAddrs, TcpStream};
 
