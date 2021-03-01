@@ -230,7 +230,7 @@ mod spec {
             CannotWriteModel(#[from] ModelSerializeError),
             #[error("Can't write bytes to resource: {0}")]
             CannotWriteBytes(#[from] io::Error),
-            #[error("Can't read feature: {0}")]
+            #[error("Can't write feature: {0}")]
             CannotWritePeerFeature(#[from] FeaturesError),
         }
 
