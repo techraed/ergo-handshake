@@ -7,3 +7,4 @@ mod hs;
 mod messages;
 mod models;
 mod utils;
+mod encoding;

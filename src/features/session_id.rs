@@ -3,7 +3,7 @@ use std::io::{Read, Write};
 use sigma_ser::vlq_encode::{ReadSigmaVlqExt, WriteSigmaVlqExt};
 
 use crate::models::MagicBytes;
-use crate::utils::{default_vlq_reader, default_vlq_writer, TryFromVlq, TryIntoVlq};
+use crate::encoding::vlq::{default_vlq_reader, default_vlq_writer, TryFromVlq, TryIntoVlq};
 
 use super::{FeatureParseError, FeatureSerializeError};
 
