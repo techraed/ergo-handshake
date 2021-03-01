@@ -2,18 +2,18 @@ use std::convert::TryFrom;
 use std::io;
 use std::ops::{Deref, DerefMut};
 
+use sigma_ser::vlq_encode::{ReadSigmaVlqExt, VlqEncodingError, WriteSigmaVlqExt};
 use thiserror::Error;
-use sigma_ser::vlq_encode::{ReadSigmaVlqExt, WriteSigmaVlqExt, VlqEncodingError};
 
-use crate::models::{PeerAddr, ShortString, Version, ModelSerializeError, ModelParseError};
-use crate::features::{Features, PeerFeature, FeaturesError};
 use crate::encoding::vlq::{default_vlq_reader, default_vlq_writer, TryFromVlq, TryIntoVlq};
+use crate::features::{Features, FeaturesError, PeerFeature};
+use crate::models::{ModelParseError, ModelSerializeError, PeerAddr, ShortString, Version};
 use crate::utils::make_timestamp;
 
-pub use spec_reader::HsSpecReaderError;
-pub use spec_writer::HsSpecWriterError;
 use spec_reader::HSSpecReader;
+pub use spec_reader::HsSpecReaderError;
 use spec_writer::HSSpecWriter;
+pub use spec_writer::HsSpecWriterError;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Handshake {
@@ -102,7 +102,7 @@ mod spec_reader {
         CannotReadPeerFeatureFromBytes(#[from] FeaturesError),
         #[error("Decoding data failed")]
         // todo-crucial VlqEncodingError doesn't impl Error. VlqDecodingError::VlqDecodingError tells us nothing
-        CannotVlqDecodeData(VlqEncodingError)
+        CannotVlqDecodeData(VlqEncodingError),
     }
 
     pub(super) struct HSSpecReader<R: ReadSigmaVlqExt>(R);
@@ -171,7 +171,9 @@ mod spec_reader {
                     features.push(feature_res);
                     num -= 1;
                 }
-                return Features::try_new(features).map(|f| Some(f)).map_err(HsSpecReaderError::CannotReadPeerFeatureFromBytes);
+                return Features::try_new(features)
+                    .map(|f| Some(f))
+                    .map_err(HsSpecReaderError::CannotReadPeerFeatureFromBytes);
             }
             Ok(None)
         }
@@ -289,5 +291,4 @@ mod spec_writer {
             &mut self.0
         }
     }
-    
 }

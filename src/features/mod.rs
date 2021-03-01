@@ -1,8 +1,8 @@
 use std::convert::TryFrom;
 use std::ops::{Deref, DerefMut};
 
-use crate::models::PeerAddr;
 use crate::encoding::vlq::{TryFromVlq, TryIntoVlq};
+use crate::models::PeerAddr;
 
 pub use feature_errors::*;
 pub use mode::Mode;
