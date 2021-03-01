@@ -1,3 +1,3 @@
-pub use handshake::Handshake;
+pub use handshake::{Handshake, HsSpecReaderError, HsSpecWriterError};
 
 mod handshake;

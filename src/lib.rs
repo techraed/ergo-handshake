@@ -1,5 +1,5 @@
 pub use features::{FeatureParseError, FeatureSerializeError, Features, FeaturesError, Mode, PeerFeature, SessionId};
-pub use messages::Handshake;
+pub use messages::{Handshake, };
 pub use models::{MagicBytes, PeerAddr, ShortString, Version};
 
 mod features;

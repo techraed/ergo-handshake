@@ -7,7 +7,8 @@ use crate::features::{Features, PeerFeature};
 use crate::utils::make_timestamp;
 use crate::encoding::vlq::{default_vlq_reader, default_vlq_writer};
 
-use spec::{HSSpecWriter, HSSpecReader, HsSpecReaderError, HsSpecWriterError};
+pub use spec::{HsSpecWriterError, HsSpecReaderError};
+use spec::{HSSpecWriter, HSSpecReader};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Handshake {
@@ -122,7 +123,7 @@ mod spec {
             CannotVlqDecodeData(VlqEncodingError)
         }
 
-        pub(crate) struct HSSpecReader<R: ReadSigmaVlqExt>(R);
+        pub(in crate::messages::handshake) struct HSSpecReader<R: ReadSigmaVlqExt>(R);
 
         // tmp, until VlqEncodingError is fixed
         impl From<VlqEncodingError> for HsSpecReaderError {
@@ -149,23 +150,23 @@ mod spec {
             //     assert_eq!(10, a);
             //     assert_eq!(10, b);
             // }
-            pub(crate) fn new(reader: R) -> Self {
+            pub(in crate::messages::handshake) fn new(reader: R) -> Self {
                 Self(reader)
             }
 
-            pub(crate) fn read_short_string(&mut self) -> Result<ShortString, HsSpecReaderError> {
+            pub(in crate::messages::handshake) fn read_short_string(&mut self) -> Result<ShortString, HsSpecReaderError> {
                 let len = self.get_u8()?;
                 let buf = self.read_model_data(len as usize)?;
                 ShortString::try_from(buf).map_err(HsSpecReaderError::CannotReadModelFromBytes)
             }
 
-            pub(crate) fn read_version(&mut self) -> Result<Version, HsSpecReaderError> {
+            pub(in crate::messages::handshake) fn read_version(&mut self) -> Result<Version, HsSpecReaderError> {
                 let mut v = Version::default();
                 self.read_exact(&mut v.0)?;
                 Ok(v)
             }
 
-            pub(crate) fn read_peer_addr(&mut self) -> Result<PeerAddr, HsSpecReaderError> {
+            pub(in crate::messages::handshake) fn read_peer_addr(&mut self) -> Result<PeerAddr, HsSpecReaderError> {
                 let len = self.get_u8()?;
                 if let Some(len) = len.checked_sub(Self::PORT_EXCESS_BYTES) {
                     let buf = self.read_model_data(len as usize)?;
@@ -174,7 +175,7 @@ mod spec {
                 Err(HsSpecReaderError::TooShortPeerAddrDataLength(len, PeerAddr::SIZE_IPv4_SOCKET as u8 + Self::PORT_EXCESS_BYTES))
             }
 
-            pub(crate) fn read_features(&mut self) -> Result<Option<Features>, HsSpecReaderError> {
+            pub(in crate::messages::handshake) fn read_features(&mut self) -> Result<Option<Features>, HsSpecReaderError> {
                 let features_num = self.get_u8().ok();
                 if let Some(mut num) = features_num {
                     let mut features = Vec::with_capacity(num as usize);
@@ -235,7 +236,7 @@ mod spec {
         }
 
 
-        pub(crate) struct HSSpecWriter<W: WriteSigmaVlqExt>(W);
+        pub(in crate::messages::handshake) struct HSSpecWriter<W: WriteSigmaVlqExt>(W);
 
         impl<W: WriteSigmaVlqExt> HSSpecWriter<W> {
             // Used due to public address (de)serialization bug in the reference ergo-node:
@@ -258,32 +259,32 @@ mod spec {
             //     assert_eq!(123123141, a);
             //     assert_eq!(10, b);
             // }
-            pub(crate) fn new(writer: W) -> Self {
+            pub(in crate::messages::handshake) fn new(writer: W) -> Self {
                 Self(writer)
             }
 
-            pub(crate) fn into_inner(self) -> W {
+            pub(in crate::messages::handshake) fn into_inner(self) -> W {
                 self.0
             }
 
-            pub(crate) fn write_short_string(&mut self, short_string: &ShortString) -> Result<(), HsSpecWriterError> {
+            pub(in crate::messages::handshake) fn write_short_string(&mut self, short_string: &ShortString) -> Result<(), HsSpecWriterError> {
                 let data = short_string.as_bytes();
                 self.put_u8(data.len() as u8)?;
                 self.write_all(&data).map_err(HsSpecWriterError::CannotWriteBytes)
             }
 
-            pub(crate) fn write_version(&mut self, version: &Version) -> Result<(), HsSpecWriterError> {
+            pub(in crate::messages::handshake) fn write_version(&mut self, version: &Version) -> Result<(), HsSpecWriterError> {
                 let Version(data) = version;
                 self.write_all(data).map_err(HsSpecWriterError::CannotWriteBytes)
             }
 
-            pub(crate) fn write_peer_addr(&mut self, peer_addr: &PeerAddr) -> Result<(), HsSpecWriterError> {
+            pub(in crate::messages::handshake) fn write_peer_addr(&mut self, peer_addr: &PeerAddr) -> Result<(), HsSpecWriterError> {
                 let data = peer_addr.try_into_vlq()?;
                 self.put_u8(data.len() as u8 + Self::PORT_EXCESS_BYTES)?;
                 self.write_all(&data).map_err(HsSpecWriterError::CannotWriteBytes)
             }
 
-            pub(crate) fn write_features(&mut self, features: &Features) -> Result<(), HsSpecWriterError> {
+            pub(in crate::messages::handshake) fn write_features(&mut self, features: &Features) -> Result<(), HsSpecWriterError> {
                 self.put_u8(features.len() as u8)?;
                 for feature in features.iter() {
                     self.write_feature(feature)?;
