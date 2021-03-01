@@ -33,6 +33,7 @@ impl Handshake {
         let agent_name = hs_reader.read_short_string()?;
         let version = hs_reader.read_version()?;
         let peer_name = hs_reader.read_short_string()?;
+        // todo-minor hide in reader (+ read_bool)
         let pub_address = {
             let is_pub_node = hs_reader.get_u8()? == 1;
             if is_pub_node {
@@ -71,6 +72,7 @@ impl Handshake {
         hs_writer.write_short_string(&self.agent_name)?;
         hs_writer.write_version(&self.version)?;
         hs_writer.write_short_string(&self.peer_name)?;
+        // todo-minor hide in writer (+ write_bool)
         if let Some(peer_addr) = self.pub_address.as_ref() {
             hs_writer.put_u8(1)?;
             hs_writer.write_peer_addr(peer_addr)?;
