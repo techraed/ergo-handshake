@@ -8,10 +8,11 @@ use crate::models::{ModelParseError, ModelSerializeError};
 
 use super::Features;
 
+// todo-minor dunno whether it's fine, but FeaturesError was introduced, because I don't know more suitable place for TooMuchPeerFeatures error
 #[derive(Error, Debug)]
 pub enum FeaturesError {
     #[error("Can't create Futures with provided amount of PeerFeature - {0}, maximum allowed {}", Features::MAX_LEN)]
-    TooMuchFeatures(usize),
+    TooMuchPeerFeatures(usize),
     #[error("Can't serialize feature: {0}")]
     CannotSerializeFeature(#[source] FeatureSerializeError),
     #[error("Can't parse feature from received data: {0}")]

@@ -30,7 +30,7 @@ impl Features {
 
     pub fn try_new(features: Vec<PeerFeature>) -> Result<Self, FeaturesError> {
         if features.len() > 255 {
-            return Err(FeaturesError::TooMuchFeatures(features.len()));
+            return Err(FeaturesError::TooMuchPeerFeatures(features.len()));
         }
         Ok(Self(features))
     }
