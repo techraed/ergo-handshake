@@ -1,12 +1,15 @@
 use std::convert::TryFrom;
 
-use ergo_handshake::{handshaking, Handshake, Version, ShortString};
+use ergo_handshake::handshaking;
+use ergo_handshake::models::{ShortString, Version};
+use ergo_handshake::messages::Handshake;
 
 fn main() {
     // Run locally ergo node
     // It is usually upped locally at 0.0.0.0:9030
-    let local_node_addr = "0.0.0.0:9030";
-    let (conn, received_hs) = handshaking(local_node_addr, my_default_hs()).expect("can't perform handshake with ergo node");
+    let remote_node_addr = "0.0.0.0:9030";
+    let (conn, received_hs) = handshaking(remote_node_addr, my_default_hs()).expect("can't perform handshake with ergo node");
+    // use further `conn` with a remote node and `received_hs` from it
 }
 
 fn my_default_hs() -> Handshake {
