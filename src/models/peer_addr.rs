@@ -37,8 +37,8 @@ impl TryFromVlq for PeerAddr {
                     let ip_octets = <[u8; Self::SIZE_IPv4]>::try_from(ip_bytes).expect("internal error: slice len != 4");
                     (IpAddr::V4(Ipv4Addr::from(ip_octets)), port_bytes)
                 }
-                size_ip4_socket if size_ip4_socket == Self::SIZE_IPv6_SOCKET ||
-                    size_ip4_socket == Self::SIZE_IPv6_SOCKET + Self::PORT_EXCESS_VLQ_SIZE => {
+                size_ip6_socket if size_ip6_socket == Self::SIZE_IPv6_SOCKET ||
+                    size_ip6_socket == Self::SIZE_IPv6_SOCKET + Self::PORT_EXCESS_VLQ_SIZE => {
                     let (ip_bytes, port_bytes) = data.split_at(Self::SIZE_IPv6);
                     let ip_octets = <[u8; Self::SIZE_IPv6]>::try_from(ip_bytes).expect("internal error: slice len != 16");
                     (IpAddr::V6(Ipv6Addr::from(ip_octets)), port_bytes)
@@ -59,13 +59,13 @@ impl TryIntoVlq for PeerAddr {
     type Error = ModelSerializeError;
 
     fn try_into_vlq(&self) -> Result<Vec<u8>, Self::Error> {
-        let PeerAddr(inner) = self;
+        let PeerAddr(socket_addr) = self;
         let mut vlq_writer = {
-            let buf_size = if inner.is_ipv4() { Self::SIZE_IPv4_SOCKET } else { Self::SIZE_IPv6_SOCKET };
+            let buf_size = if socket_addr.is_ipv4() { Self::SIZE_IPv4_SOCKET } else { Self::SIZE_IPv6_SOCKET };
             default_vlq_writer(Vec::with_capacity(buf_size))
         };
         // todo-minor clean up copy-paste
-        match inner {
+        match socket_addr {
             SocketAddr::V4(sock4) => {
                 vlq_writer.write_all(&sock4.ip().octets())?;
             }
@@ -73,7 +73,7 @@ impl TryIntoVlq for PeerAddr {
                 vlq_writer.write_all(&sock6.ip().octets())?;
             }
         };
-        vlq_writer.put_u16(inner.port())?;
+        vlq_writer.put_u16(socket_addr.port())?;
 
         Ok(vlq_writer.into_inner())
     }
