@@ -21,7 +21,7 @@ impl PeerAddr {
     #[allow(non_upper_case_globals)]
     const SIZE_IPv6: usize = 16;
     pub(crate) const SIZE_PORT: usize = 2;
-    // Port u16 value is encoded in 2 or 3 bytes
+    // Port u16 value is vlq-encoded in 2 or 3 bytes
     const PORT_EXCESS_VLQ_SIZE: usize = 1;
 }
 
@@ -48,7 +48,7 @@ impl TryFromVlq for PeerAddr {
         };
         let port = {
             let mut vlq_reader = default_vlq_reader(port_bytes);
-            vlq_reader.get_u16().expect("internal error: port bytes slice len isn't 2 or 3")
+            vlq_reader.get_u16().expect("internal error: port bytes slice len isn't equal to 2 or 3")
         };
 
         Ok(Self(SocketAddr::new(ip_addr, port)))
@@ -81,7 +81,6 @@ impl TryIntoVlq for PeerAddr {
 
 #[cfg(test)]
 mod tests {
-
     use rand::{thread_rng, Rng};
 
     use super::*;
@@ -161,7 +160,7 @@ mod tests {
             let data = generate_random_peer_addr_bytes(AddrType::Ip4);
             let peer_addr = PeerAddr::try_from_vlq(data);
             assert!(peer_addr.is_ok());
-            assert!(peer_addr.expect("test failed").0.is_ipv4())
+            assert!(peer_addr.expect("internal error: can't vlq decode peer addr").0.is_ipv4())
         }
     }
 
@@ -171,7 +170,7 @@ mod tests {
             let data = generate_random_peer_addr_bytes(AddrType::Ip6);
             let peer_addr = PeerAddr::try_from_vlq(data);
             assert!(peer_addr.is_ok());
-            assert!(peer_addr.expect("test failed").0.is_ipv6())
+            assert!(peer_addr.expect("internal error: can't vlq decode peer addr").0.is_ipv6())
         }
     }
 

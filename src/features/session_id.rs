@@ -35,8 +35,7 @@ impl TryIntoVlq for SessionId {
 
     fn try_into_vlq(&self) -> Result<Vec<u8>, Self::Error> {
         let mut vlq_writer = default_vlq_writer(Vec::new());
-        let SessionId { magic, session_id } = self;
-        let MagicBytes(magic) = magic;
+        let SessionId { magic: MagicBytes(magic), session_id } = self;
 
         vlq_writer.write(magic.as_ref())?;
         vlq_writer.put_i64(*session_id)?;

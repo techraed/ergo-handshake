@@ -88,7 +88,6 @@ impl Handshake {
 }
 
 mod spec_reader {
-
     use super::*;
 
     // todo-minor CannotReadShortStringLength and such?
@@ -203,7 +202,6 @@ mod spec_reader {
 }
 
 mod spec_writer {
-
     use super::*;
 
     #[derive(Error, Debug)]
@@ -311,18 +309,18 @@ mod tests {
     }
 
     fn create_hs(agent_name: &str, version: Version, peer_name: &str, pub_address: Option<PeerAddr>, features: Option<Features>) -> Handshake {
-        let agent_name = ShortString::try_from(agent_name.to_string().into_bytes()).expect("invalid agent name");
-        let peer_name = ShortString::try_from(peer_name.to_string().into_bytes()).expect("invalid peer name");
+        let agent_name = ShortString::try_from(agent_name.to_string().into_bytes()).expect("internal error: invalid agent name");
+        let peer_name = ShortString::try_from(peer_name.to_string().into_bytes()).expect("internal error: invalid peer name");
         Handshake { agent_name, version, peer_name, pub_address, features}
     }
 
     fn create_peer_addr(addr: &str) -> PeerAddr {
-        let sock_addr = addr.to_socket_addrs().map(|mut addr| addr.next()).expect("invalid sock addr str");
+        let sock_addr = addr.to_socket_addrs().map(|mut addr| addr.next()).expect("internal error: invalid sock addr str");
         sock_addr.map(PeerAddr).expect("invalid sock addr str")
     }
 
     fn create_features(features: Vec<PeerFeature>) -> Features {
-        Features::try_new(features).expect("invalid features vec length")
+        Features::try_new(features).expect("internal error: invalid features vec length")
     }
 
     fn create_mode_pf(state_type: u8, is_verifying: bool, nipopow_suffix_len: Option<u32>, blocks_to_keep: i32) -> PeerFeature {
@@ -414,12 +412,12 @@ mod tests {
     fn run_test(hs: Handshake, hs_bytes: Vec<u8>) {
         let hs_actual = Handshake::parse(&hs_bytes);
         assert!(hs_actual.is_ok());
-        let hs_actual = hs_actual.expect("can't parse hs bytes");
+        let hs_actual = hs_actual.expect("internal error: can't parse hs bytes");
         assert_eq!(hs_actual, hs);
 
         let hs_bytes_actual = hs_actual.serialize();
         assert!(hs_bytes_actual.is_ok());
-        let hs_bytes_actual = hs_bytes_actual.expect("can't serialize hs msg");
+        let hs_bytes_actual = hs_bytes_actual.expect("internal error: can't serialize hs msg");
         // avoiding timestamp bytes
         assert_eq!(&hs_bytes_actual[5..], &hs_bytes[5..]);
     }
