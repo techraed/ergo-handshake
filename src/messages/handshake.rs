@@ -103,7 +103,7 @@ mod spec_reader {
         #[error("Can't read feature: {0}")]
         CannotReadPeerFeatureFromBytes(#[from] FeaturesError),
         #[error("Decoding data failed")]
-        // todo-crucial VlqEncodingError doesn't impl Error. VlqDecodingError::VlqDecodingError tells us nothing
+        // todo-tmp VlqEncodingError doesn't impl Error. VlqDecodingError::VlqDecodingError tells us nothing
         CannotVlqDecodeData(VlqEncodingError),
     }
 

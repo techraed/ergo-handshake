@@ -24,7 +24,7 @@ pub enum FeatureParseError {
     #[error("Feature can't be read from resource: {0}")]
     CannotReadData(#[from] io::Error),
     #[error("Decoding data failed")]
-    // todo-crucial VlqEncodingError doesn't impl Error. VlqDecodingError::VlqDecodingError tells us nothing
+    // todo-tmp VlqEncodingError doesn't impl Error. VlqDecodingError::VlqDecodingError tells us nothing
     CannotVlqDecodeData(VlqEncodingError),
     #[error("{0}")]
     CannotParseLocalAddress(#[source] ModelParseError),
