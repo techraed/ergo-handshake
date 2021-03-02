@@ -33,7 +33,7 @@ impl Handshake {
         let agent_name = hs_reader.read_short_string()?;
         let version = hs_reader.read_version()?;
         let peer_name = hs_reader.read_short_string()?;
-        // todo-minor hide in reader (+ read_bool)
+        // todo-minor hide in reader (+ read_opt and read_bool)
         let pub_address = {
             let is_pub_node = hs_reader.get_u8()? == 1;
             if is_pub_node {
@@ -72,7 +72,7 @@ impl Handshake {
         hs_writer.write_short_string(&self.agent_name)?;
         hs_writer.write_version(&self.version)?;
         hs_writer.write_short_string(&self.peer_name)?;
-        // todo-minor hide in writer (+ write_bool)
+        // todo-minor hide in writer (+ write_opt and write_bool)
         if let Some(peer_addr) = self.pub_address.as_ref() {
             hs_writer.put_u8(1)?;
             hs_writer.write_peer_addr(peer_addr)?;
@@ -91,7 +91,7 @@ mod spec_reader {
 
     use super::*;
 
-    // todo-minor CannotReadShortStringLength?
+    // todo-minor CannotReadShortStringLength and such?
     #[derive(Error, Debug)]
     pub enum HsSpecReaderError {
         #[error("Can't read model: {0}")]
@@ -291,6 +291,161 @@ mod spec_writer {
     impl<W: WriteSigmaVlqExt> DerefMut for HSSpecWriter<W> {
         fn deref_mut(&mut self) -> &mut Self::Target {
             &mut self.0
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::net::ToSocketAddrs;
+
+    use hex;
+
+    use crate::features::{Mode, SessionId};
+    use crate::models::MagicBytes;
+
+    use super::*;
+
+    fn hex_to_bytes(s: &str) -> Vec<u8> {
+        hex::decode(s).expect("internal error: invalid hex str")
+    }
+
+    fn create_hs(agent_name: &str, version: Version, peer_name: &str, pub_address: Option<PeerAddr>, features: Option<Features>) -> Handshake {
+        let agent_name = ShortString::try_from(agent_name.to_string().into_bytes()).expect("invalid agent name");
+        let peer_name = ShortString::try_from(peer_name.to_string().into_bytes()).expect("invalid peer name");
+        Handshake { agent_name, version, peer_name, pub_address, features}
+    }
+
+    fn create_peer_addr(addr: &str) -> PeerAddr {
+        let sock_addr = addr.to_socket_addrs().map(|mut addr| addr.next()).expect("invalid sock addr str");
+        sock_addr.map(PeerAddr).expect("invalid sock addr str")
+    }
+
+    fn create_features(features: Vec<PeerFeature>) -> Features {
+        Features::try_new(features).expect("invalid features vec length")
+    }
+
+    fn create_mode_pf(state_type: u8, is_verifying: bool, nipopow_suffix_len: Option<u32>, blocks_to_keep: i32) -> PeerFeature {
+        PeerFeature::Mode(Mode { state_type, is_verifying, nipopow_suffix_len, blocks_to_keep })
+    }
+
+    fn create_session_id_pf(magic: MagicBytes, session_id: i64) -> PeerFeature {
+        PeerFeature::SessionId(SessionId { magic, session_id  })
+    }
+
+    fn create_local_addr_pf(addr: &str) -> PeerFeature {
+        PeerFeature::LocalAddr(create_peer_addr(addr))
+    }
+
+    fn real_app_test_cases() -> Vec<(Handshake, Vec<u8>)> {
+        let case1 = {
+            let hs = create_hs(
+                "ergoref",
+                Version([4, 0, 5]),
+                "ergo-mainnet-4.0.0",
+                None,
+                Some(create_features(vec![
+                    create_mode_pf(0, true, None, -1),
+                    create_session_id_pf(MagicBytes([1, 0, 2, 4]), -7226886467503878579)
+                ]))
+            );
+            let hs_bytes = hex_to_bytes("c3bcaca3fb2e076572676f726566040005126572676f2d6d61696e6e65742d342e302e300002100400010001030e01000204e5c6abfafabc87cbc801");
+            (hs, hs_bytes)
+        };
+        let case2 = {
+            let hs = create_hs(
+                "ergoref",
+                Version([3, 3, 6]),
+                "mainnet-seed-node-sf",
+                Some(create_peer_addr("165.227.26.175:9030")),
+                Some(create_features(vec![
+                    create_mode_pf(0, true, None, -1),
+                    create_session_id_pf(MagicBytes([1, 0, 2, 4]), -2393537216959524988)
+                ]))
+            );
+            let hs_bytes = hex_to_bytes("93bdaca3fb2e076572676f726566030306146d61696e6e65742d736565642d6e6f64652d73660108a5e31aafc64602100400010001030d01000204f7c1e5d8dadac6b742");
+            (hs, hs_bytes)
+        };
+        let case3 = {
+            let hs = create_hs(
+                "ergoref",
+                Version([4, 0, 5]),
+                "ergo-mainnet-4.0.1",
+                Some(create_peer_addr("213.239.193.208:9030")),
+                Some(create_features(vec![
+                    create_mode_pf(0, true, None, -1),
+                    create_session_id_pf(MagicBytes([1, 0, 2, 4]), 6155961833357488951)
+                ]))
+            );
+            let hs_bytes = hex_to_bytes("dee2aca3fb2e076572676f726566040005126572676f2d6d61696e6e65742d342e302e310108d5efc1d0c64602100400010001030e01000204eecc9582ffaaafeeaa01");
+            (hs, hs_bytes)
+        };
+        let case4 = {
+            let hs = create_hs(
+                "ergoref",
+                Version([3, 3, 6]),
+                "mainnet-seed-node-toronto",
+                Some(create_peer_addr("159.89.116.15:9030")),
+                Some(create_features(vec![
+                    create_mode_pf(0, true, None, -1),
+                    create_session_id_pf(MagicBytes([1, 0, 2, 4]), -8301048747963648041)
+                ]))
+            );
+            let hs_bytes = hex_to_bytes("ed8aada3fb2e076572676f726566030306196d61696e6e65742d736565642d6e6f64652d746f726f6e746f01089f59740fc64602100400010001030e01000204d1a098d9dff69fb3e601");
+            (hs, hs_bytes)
+        };
+        let case5 = {
+            let hs = create_hs(
+                "ergoref",
+                Version([3, 3, 6]),
+                "ergo-mainnet-4.0.0",
+                None,
+                Some(create_features(vec![
+                    create_mode_pf(0, true, None, -1),
+                    create_session_id_pf(MagicBytes([1, 0, 2, 4]), 3120095637531038426)
+                ]))
+            );
+            let hs_bytes = hex_to_bytes("e3b1ada3fb2e076572676f726566030306126572676f2d6d61696e6e65742d342e302e300002100400010001030d01000204b4cbc4c4f19ce7cc56");
+            (hs, hs_bytes)
+        };
+        vec![case1, case2, case3, case4, case5]
+    }
+
+    fn run_test(hs: Handshake, hs_bytes: Vec<u8>) {
+        let hs_actual = Handshake::parse(&hs_bytes);
+        assert!(hs_actual.is_ok());
+        let hs_actual = hs_actual.expect("can't parse hs bytes");
+        assert_eq!(hs_actual, hs);
+
+        let hs_bytes_actual = hs_actual.serialize();
+        assert!(hs_bytes_actual.is_ok());
+        let hs_bytes_actual = hs_bytes_actual.expect("can't serialize hs msg");
+        // avoiding timestamp bytes
+        assert_eq!(&hs_bytes_actual[5..], &hs_bytes[5..]);
+    }
+
+    #[test]
+    fn test_base_ergo_case() {
+        // from https://github.com/ergoplatform/ergo/blob/8ad8818bb0a2bc8df3be88259e379bad7221dc68/src/test/scala/org/ergoplatform/network/HandshakeSpecification.scala
+        let hs_expected = create_hs(
+            "ergoref",
+            Version([3, 3, 6]),
+            "ergo-mainnet-3.3.6",
+            None,
+            Some(create_features(vec![
+                create_mode_pf(0, true, None, -1),
+                create_local_addr_pf("127.0.0.1:9006")
+            ]))
+        );
+        let hs_bytes = hex_to_bytes("bcd2919cee2e076572676f726566030306126572676f2d6d61696e6e65742d332e332e36000210040001000102067f000001ae46");
+
+        run_test(hs_expected, hs_bytes)
+    }
+
+    #[test]
+    fn test_real_app_cases() {
+        for (hs_expected, hs_bytes) in real_app_test_cases() {
+            run_test(hs_expected, hs_bytes)
         }
     }
 }
